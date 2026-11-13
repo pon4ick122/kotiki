@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Шарики: Сортировка</title>
+<style>
+:root{
+  --bg1:#1d2b64; --bg2:#5b3fa8; --ink:#ffffff; --muted:#c9c3ff;
+  --card:#ffffff; --card-ink:#2d2350; --accent:#ffb703; --accent-d:#d98e04;
+  --violet:#7c5cff; --violet-d:#5b3fd6; --green:#3ccf91; --green-d:#22a06e;
+  --glass:rgba(255,255,255,.14); --glass-b:rgba(255,255,255,.55);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;touch-action:manipulation;overscroll-behavior:none}
+body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 15% 8%,#ffffff22 0,transparent 30%),radial-gradient(circle at 90% 85%,#ff7ad922 0,transparent 35%),linear-gradient(165deg,var(--bg1),var(--bg2));
+  display:flex;justify-content:center}
+#app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;
+  padding:max(10px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));gap:8px}
+
+/* верх */
+#hud{display:flex;align-items:center;gap:8px}
+.pill{background:#ffffff1f;border:1px solid #ffffff33;border-radius:16px;padding:6px 12px;display:flex;align-items:center;gap:8px;font-weight:900}
+#lvl{flex:1;font-size:20px;display:block;white-space:nowrap;min-width:0;line-height:1.1}
+#lvl small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+#coinsBox{font-size:20px}
+.coin{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffc300 45%,#d98e04);box-shadow:inset 0 -2px 0 #b06d00;flex:none}
+.icon-btn{width:46px;height:46px;flex:none;border:1px solid #ffffff33;border-radius:14px;background:#ffffff1f;color:#fff;font-size:22px;cursor:pointer;display:grid;place-items:center}
+.icon-btn:active{transform:scale(.94)}
+
+#tip{min-height:22px;text-align:center;font-size:15px;font-weight:700;color:var(--muted);padding:0 8px}
+#tip.warn{color:#ffd166}
+
+/* поле */
+#board{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--b) * 1.5);padding-top:calc(var(--b) * 1.4)}
+.row{display:flex;justify-content:center;gap:var(--gap)}
+.tube{position:relative;width:calc(var(--b) + 12px);height:calc(var(--b) * var(--cap) + 18px);border:3px solid var(--glass-b);border-top:none;
+  border-radius:0 0 calc(var(--b) * .6) calc(var(--b) * .6);background:linear-gradient(90deg,#ffffff10,#ffffff2a 30%,#ffffff0d 60%,#ffffff22);
+  display:flex;flex-direction:column-reverse;align-items:center;padding:4px 0 6px;cursor:pointer;transition:transform .15s, box-shadow .2s}
+.tube::before{content:"";position:absolute;top:-4px;left:-8px;right:-8px;height:8px;border-radius:6px;background:var(--glass-b)}
+.tube.sel{transform:translateY(-6px)}
+.tube.done{border-color:#9dffcf;box-shadow:0 0 18px #3ccf9188}
+.tube.done::before{background:#9dffcf}
+.tube.hint{animation:hintPulse .8s ease-in-out 3}
+@keyframes hintPulse{50%{box-shadow:0 0 0 4px #ffd166,0 0 24px #ffd166}}
+.tube.extra{border-style:dashed}
+
+.ball{--c:#f00;position:relative;width:var(--b);height:var(--b);border-radius:50%;flex:none;margin-top:1px;
+  background:radial-gradient(circle at 32% 28%,#ffffffcc 0,#ffffff00 28%),radial-gradient(circle at 50% 60%,var(--c) 55%,color-mix(in srgb,var(--c),#000 30%) 100%);
+  box-shadow:inset 0 -3px 0 #0000002a;display:grid;place-items:center;transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.ball.up{transform:translateY(calc(var(--b) * -1.0 - 14px - (var(--cap) - var(--n)) * var(--b)))}
+.ball .sym{font-size:calc(var(--b) * .42);line-height:1;color:#ffffffe6;text-shadow:0 1px 2px #0006;font-weight:900;pointer-events:none}
+.fly{position:fixed;z-index:50;pointer-events:none}
+
+/* стили шариков */
+.th-faces .ball::after{content:"";position:absolute;left:24%;right:24%;top:36%;height:18%;
+  background:radial-gradient(circle at 18% 50%,#231a3a 0 22%,transparent 24%),radial-gradient(circle at 82% 50%,#231a3a 0 22%,transparent 24%)}
+.th-faces .ball::before{content:"";position:absolute;left:38%;right:38%;top:58%;height:12%;border:0 solid #231a3a;border-bottom-width:calc(var(--b) * .06);border-radius:0 0 50% 50%}
+.th-faces .ball .sym{position:absolute;top:4%;font-size:calc(var(--b) * .24)}
+.th-candy .ball{background:radial-gradient(circle at 32% 28%,#ffffffcc 0,#ffffff00 26%),repeating-linear-gradient(45deg,var(--c) 0 18%,color-mix(in srgb,var(--c),#fff 45%) 18% 30%)}
+.th-planets .ball{border-radius:50%;background:radial-gradient(circle at 30% 30%,color-mix(in srgb,var(--c),#fff 35%),var(--c) 45%,color-mix(in srgb,var(--c),#000 50%) 100%)}
+.th-planets .ball::after{content:"";position:absolute;left:-14%;right:-14%;top:42%;height:16%;border-radius:50%;border:calc(var(--b) * .06) solid color-mix(in srgb,var(--c),#fff 55%);transform:rotate(-18deg)}
+.th-gems .ball{border-radius:22%;transform:rotate(45deg) scale(.82);background:conic-gradient(from 20deg,color-mix(in srgb,var(--c),#fff 40%),var(--c),color-mix(in srgb,var(--c),#000 35%),var(--c),color-mix(in srgb,var(--c),#fff 25%))}
+.th-gems .ball .sym{transform:rotate(-45deg)}
+.th-gems .ball.up{transform:rotate(45deg) scale(.82) translate(calc((var(--b) * -1.0 - 14px - (var(--cap) - var(--n)) * var(--b)) * .87),calc((var(--b) * -1.0 - 14px - (var(--cap) - var(--n)) * var(--b)) * .87))}
+
+/* нижняя панель */
+#tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tool{border:0;border-radius:16px;padding:8px 4px 7px;background:#ffffff1f;border:1px solid #ffffff33;color:#fff;font:inherit;font-weight:800;font-size:13px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.tool b{font-size:24px;line-height:1.1}
+.tool:active{transform:scale(.95)}
+.tool[disabled]{opacity:.4}
+.tool .tag{position:absolute;top:-6px;right:-4px;background:var(--accent);color:#3b2600;border-radius:10px;font-size:11px;padding:1px 6px;font-weight:900}
+
+/* окна */
+#overlay{position:fixed;inset:0;background:#0d0a26b3;display:none;align-items:center;justify-content:center;padding:16px;z-index:40}
+#overlay.show{display:flex}
+.modal{background:var(--card);color:var(--card-ink);border-radius:24px;padding:22px 18px 18px;width:100%;max-width:380px;text-align:center;
+  box-shadow:0 10px 0 #00000033;animation:pop .25s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.modal h2{margin:0 0 10px;font-size:24px}
+.modal p{margin:6px 0;font-size:16px;line-height:1.35}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.btn{border:0;border-radius:16px;padding:13px 14px;font:inherit;font-weight:900;font-size:17px;cursor:pointer;color:#fff;background:var(--violet);box-shadow:0 4px 0 var(--violet-d)}
+.btn.gold{background:var(--accent);color:#3b2600;box-shadow:0 4px 0 var(--accent-d)}
+.btn.green{background:var(--green);box-shadow:0 4px 0 var(--green-d)}
+.btn.ghost{background:#ece9fb;color:var(--card-ink);box-shadow:0 4px 0 #cfc9ee}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.big-reward{display:flex;align-items:center;justify-content:center;gap:8px;font-size:30px;font-weight:900;margin:8px 0}
+.stars{font-size:40px;letter-spacing:4px}
+
+/* магазин */
+.shop{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;max-height:56vh;overflow:auto;padding:4px}
+.item{border:3px solid #ece9fb;border-radius:18px;padding:10px 6px;cursor:pointer;background:#faf9ff}
+.item.cur{border-color:var(--green)}
+.item .prev{--b:30px;display:flex;justify-content:center;gap:4px;height:40px;align-items:center;margin-bottom:6px}
+.item .nm{font-weight:900;font-size:15px}
+.item .pr{font-size:13px;font-weight:800;color:#7a6fae;margin-top:2px;display:flex;justify-content:center;align-items:center;gap:4px}
+.item .pr .coin{width:16px;height:16px}
+
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;font-size:17px;font-weight:700}
+.switch{width:56px;height:32px;border-radius:16px;background:#ccc;position:relative;cursor:pointer;border:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .2s}
+.switch.on{background:var(--green)}
+.switch.on::after{left:27px}
+
+.fakead{position:fixed;inset:0;z-index:100;background:#000d;color:#fff;display:grid;place-items:center;text-align:center;font-size:22px}
+.fakead b{font-size:60px}
+.confetti{position:fixed;width:10px;height:14px;z-index:45;pointer-events:none;border-radius:2px}
+#loading{position:fixed;inset:0;display:grid;place-items:center;font-size:22px;font-weight:900;z-index:200;background:linear-gradient(165deg,var(--bg1),var(--bg2))}
+</style>
+</head>
+<body>
+<div id="loading">Загружаем шарики…</div>
+<div id="app">
+  <div id="hud">
+    <div class="pill" id="lvl">Уровень 1<small>3 цвета</small></div>
+    <div class="pill" id="coinsBox"><span class="coin"></span><span id="coins">0</span></div>
+    <button class="icon-btn" id="bShop" title="Магазин стилей">🎨</button>
+    <button class="icon-btn" id="bSet" title="Настройки">⚙️</button>
+  </div>
+  <div id="tip"></div>
+  <div id="board"></div>
+  <div id="tools">
+    <button class="tool" id="tUndo"><b>↶</b>Отмена<span class="tag" id="undoTag">3</span></button>
+    <button class="tool" id="tHint"><b>💡</b>Подсказка<span class="tag">📺</span></button>
+    <button class="tool" id="tTube"><b>🧪</b>+ Колба<span class="tag">📺</span></button>
+    <button class="tool" id="tRestart"><b>↻</b>Заново</button>
+  </div>
+</div>
+<div id="overlay"></div>
+
+<script>
+"use strict";
+/* ============ ПЛАТФОРМА (реклама, SDK) ============ */
+const Platform = {
+  kind: "local", sdk: null,
+  async init() {
+    if (/(^|[?&])vk_app_id=/.test(location.search)) {          // ВКонтакте
+      try {
+        await loadScript("vk-bridge.min.js");
+        await vkBridge.send("VKWebAppInit");
+        this.sdk = vkBridge; this.kind = "vk";
+      } catch (e) { console.warn("VK Bridge не загрузился", e); }
+    } else if (/yandex|playhop/.test(location.hostname)) {      // Яндекс Игры
+      try {
+        await loadScript("/sdk.js");
+        this.sdk = await YaGames.init();
+        this.kind = "yandex";
+      } catch (e) { console.warn("Yandex SDK не загрузился", e); }
+    } else if (/itch\.io|itch\.zone|hwcdn/.test(location.hostname)) { // itch.io — без рекламы
+      this.kind = "noads";
+    }
+  },
+  hasAds() { return this.kind !== "noads"; },
+  ready() { try { this.sdk && this.sdk.features.LoadingAPI.ready(); } catch (e) {} },
+  rewarded(onReward) {
+    if (this.kind === "noads") { onReward(); return; }
+    lastAdAt = Date.now();
+    if (this.kind === "vk") {
+      setAdMute(true);
+      this.sdk.send("VKWebAppShowNativeAds", { ad_format: "reward" })
+        .then(d => { setAdMute(false); if (d && d.result) onReward(); else toast("Реклама пока недоступна, попробуй позже"); })
+        .catch(() => { setAdMute(false); toast("Реклама пока недоступна, попробуй позже"); });
+      return;
+    }
+    if (this.kind === "yandex") {
+      let got = false;
+      this.sdk.adv.showRewardedVideo({ callbacks: {
+        onOpen: () => setAdMute(true),
+        onRewarded: () => { got = true; },
+        onClose: () => { setAdMute(false); if (got) onReward(); },
+        onError: () => { setAdMute(false); toast("Реклама пока недоступна, попробуй позже"); }
+      }});
+      return;
+    }
+    fakeAd(onReward);
+  },
+  interstitial() {
+    lastAdAt = Date.now();
+    if (this.kind === "vk") {
+      setAdMute(true);
+      this.sdk.send("VKWebAppShowNativeAds", { ad_format: "interstitial" }).catch(() => {}).finally(() => setAdMute(false));
+      return;
+    }
+    if (this.kind === "yandex") {
+      this.sdk.adv.showFullscreenAdv({ callbacks: {
+        onOpen: () => setAdMute(true), onClose: () => setAdMute(false), onError: () => setAdMute(false)
+      }});
+    }
+  }
+};
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); });
+}
+function fakeAd(cb) {
+  const o = document.createElement("div"); o.className = "fakead";
+  let n = 3;
+  o.innerHTML = `<div>📺 Тут будет реклама<br><b>${n}</b><br><small>(заглушка для теста)</small></div>`;
+  document.body.append(o); setAdMute(true);
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(iv); o.remove(); setAdMute(false); cb && cb(); }
+    else o.querySelector("b").textContent = n;
+  }, 1000);
+}
+
+/* ============ ЗВУК ============ */
+let actx = null, adMuted = false;
+function setAdMute(m) { adMuted = m; }
+function beep(freq, dur = .08, type = "sine", vol = .18, slide = 0) {
+  if (!save.sound || adMuted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
+  } catch (e) {}
+}
+const sfx = {
+  pick: () => beep(520, .07, "triangle", .15, 1.4),
+  drop: () => beep(330, .09, "sine", .2, .7),
+  bad:  () => beep(160, .12, "square", .08),
+  done: () => { beep(660, .1, "triangle"); setTimeout(() => beep(990, .14, "triangle"), 90); },
+  win:  () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .16, "triangle", .2), i * 110)),
+  coin: () => beep(1200, .06, "square", .06, 1.5)
+};
+
+/* ============ ДАННЫЕ ============ */
+const COLORS = [
+  { c: "#ff4d5e", s: "●" }, { c: "#3fa9ff", s: "▲" }, { c: "#ffe14d", s: "■", d: 1 }, { c: "#3ccf6a", s: "◆" },
+  { c: "#a66bff", s: "★" }, { c: "#ff9a1f", s: "♥" }, { c: "#ff7ad9", s: "✚" }, { c: "#21d4c2", s: "☾" },
+  { c: "#8b5a3c", s: "♣" }, { c: "#f0f0f5", s: "♠", d: 1 }, { c: "#2b3cc9", s: "✿" }, { c: "#8fe33a", s: "⬢", d: 1 }
+];
+const THEMES = [
+  { id: "gloss",   name: "Глянец",    price: 0 },
+  { id: "faces",   name: "Мордашки",  price: 150 },
+  { id: "candy",   name: "Конфеты",   price: 300 },
+  { id: "planets", name: "Планеты",   price: 500 },
+  { id: "gems",    name: "Самоцветы", price: 800 }
+];
+const CAP = 4;
+const SAVE_KEY = "shariki_v1";
+let save = { level: 1, coins: 0, theme: "gloss", owned: ["gloss"], sound: true, symbols: false, daily: { day: "", streak: 0 } };
+function loadSave() {
+  try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && d.level) save = Object.assign(save, d); } catch (e) {}
+}
+function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+/* ============ УРОВНИ ============ */
+function colorsFor(level) {
+  const steps = [2, 5, 9, 14, 20, 28, 38, 50, 65, 85];   // после какого уровня добавляется цвет
+  let n = 3; for (const s of steps) if (level > s) n++;
+  return Math.min(n, COLORS.length);
+}
+function rng(seed) {   // mulberry32
+  return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function isSolved(t) { return t.every(x => x.length === 0 || (x.length === CAP && x.every(b => b === x[0]))); }
+function generate(level) {
+  const n = colorsFor(level);
+  let fallback = null;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const r = rng(level * 7919 + attempt * 104729 + 13);
+    const balls = [];
+    for (let c = 0; c < n; c++) for (let k = 0; k < CAP; k++) balls.push(c);
+    for (let i = balls.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [balls[i], balls[j]] = [balls[j], balls[i]]; }
+    const tubes = [];
+    for (let i = 0; i < n; i++) tubes.push(balls.slice(i * CAP, i * CAP + CAP));
+    tubes.push([], []);
+    // слишком лёгкие раскладки (готовая колба или 3 одинаковых сверху) отбрасываем
+    if (tubes.some(t => t.length === CAP && t.every(b => b === t[0]))) continue;
+    if (n > 3 && tubes.some(t => t.length === CAP && t[1] === t[2] && t[2] === t[3])) continue;
+    fallback = fallback || tubes;
+    if (solve(tubes, 30000)) return tubes;
+  }
+  return fallback;   // почти невозможно; на этот случай есть «+ колба»
+}
+function canMove(t, a, b) {
+  if (a === b) return false;
+  const A = t[a], B = t[b];
+  if (!A.length || B.length >= CAP) return false;
+  return !B.length || B[B.length - 1] === A[A.length - 1];
+}
+function runLen(A) { let k = 1; while (k < A.length && A[A.length - 1 - k] === A[A.length - 1]) k++; return k; }
+function doMove(t, a, b) {   // меняет t, возвращает сколько шариков переехало
+  const A = t[a], B = t[b], c = A[A.length - 1];
+  const k = Math.min(runLen(A), CAP - B.length);
+  for (let i = 0; i < k; i++) B.push(A.pop());
+  return k;
+}
+function keyOf(t) { return t.map(x => x.join("")).sort().join("|"); }
+/* поиск решения в глубину; возвращает список ходов или null */
+function solve(start, limit) {
+  const seen = new Set(); let nodes = 0;
+  const t = start.map(x => x.slice()); const path = [];
+  function useful(a, b) {
+    const A = t[a], B = t[b];
+    if (A.length === CAP && A.every(x => x === A[0])) return false;        // готовая колба
+    if (!B.length && runLen(A) === A.length) return false;                  // одноцветную в пустую — бессмысленно
+    return true;
+  }
+  function dfs() {
+    if (isSolved(t)) return true;
+    if (++nodes > limit) return false;
+    const k = keyOf(t); if (seen.has(k)) return false; seen.add(k);
+    const moves = [];
+    for (let a = 0; a < t.length; a++) for (let b = 0; b < t.length; b++)
+      if (canMove(t, a, b) && useful(a, b)) moves.push([a, b, t[b].length ? 0 : 1]);
+    moves.sort((x, y) => x[2] - y[2]);                                      // сначала на свой цвет, потом в пустые
+    let emptyTried = false;
+    for (const [a, b, e] of moves) {
+      if (e) { if (emptyTried) continue; emptyTried = true; }                // все пустые колбы одинаковы
+      const n = doMove(t, a, b); path.push([a, b]);
+      if (dfs()) return true;
+      path.pop(); for (let i = 0; i < n; i++) t[a].push(t[b].pop());
+      if (nodes > limit) return false;
+    }
+    return false;
+  }
+  return dfs() ? path : null;
+}
+
+/* ============ СОСТОЯНИЕ ИГРЫ ============ */
+let tubes = [], history = [], sel = -1, undosLeft = 3, extraUsed = false, moves = 0, lastAdAt = 0, levelStartedAt = 0;
+const $ = s => document.querySelector(s);
+const board = $("#board");
+
+function startLevel() {
+  tubes = generate(save.level); history = []; sel = -1; undosLeft = 3; extraUsed = false; moves = 0; levelStartedAt = Date.now();
+  render(); updateHud();
+  setTip(save.level === 1 ? "Нажми на колбу, потом на другую — шарик перелетит. Собери в каждой колбе один цвет!" :
+         save.level === 2 ? "Класть можно только на шарик того же цвета или в пустую колбу" : "");
+}
+function updateHud() {
+  $("#lvl").innerHTML = `Уровень ${save.level}<small>${colorsFor(save.level)} ${plural(colorsFor(save.level), "цвет", "цвета", "цветов")}</small>`;
+  $("#coins").textContent = save.coins;
+  const tag = $("#undoTag"); tag.textContent = undosLeft > 0 ? undosLeft : "📺";
+  $("#tUndo").disabled = history.length === 0;
+  $("#tTube").disabled = extraUsed;
+}
+function plural(n, a, b, c) { n = Math.abs(n) % 100; const m = n % 10; return n > 10 && n < 20 ? c : m > 1 && m < 5 ? b : m === 1 ? a : c; }
+let tipTimer = 0;
+function setTip(t, warn) { const el = $("#tip"); el.textContent = t; el.classList.toggle("warn", !!warn); }
+function toast(t) { setTip(t, true); clearTimeout(tipTimer); tipTimer = setTimeout(() => setTip(""), 3000); }
+
+/* --- раскладка поля --- */
+function layout() {
+  const n = tubes.length, W = board.clientWidth, H = board.clientHeight;
+  const rows = n > 7 ? 2 : 1, per = Math.ceil(n / rows);
+  const gap = Math.max(6, Math.min(22, W / per * .15));
+  let b = (W - gap * (per - 1)) / per - 18;
+  const hMax = (H - 22 * rows - 8) / (rows * (CAP + 1.5));
+  b = Math.max(22, Math.min(54, b, hMax));
+  board.style.setProperty("--b", b + "px");
+  board.style.setProperty("--gap", gap + "px");
+  board.style.setProperty("--cap", CAP);
+  return { rows, per };
+}
+function ballHTML(c, extra = "") {
+  return `<div class="ball ${extra}" style="--c:${COLORS[c].c}">${save.symbols ? `<span class="sym"${COLORS[c].d ? " style=\"color:#2d2350;text-shadow:none\"" : ""}>${COLORS[c].s}</span>` : ""}</div>`;
+}
+function render() {
+  board.className = "th-" + save.theme;
+  const { rows, per } = layout();
+  let html = "";
+  for (let r = 0; r < rows; r++) {
+    html += `<div class="row">`;
+    for (let i = r * per; i < Math.min(tubes.length, (r + 1) * per); i++) {
+      const t = tubes[i];
+      const done = t.length === CAP && t.every(x => x === t[0]);
+      const up = i === sel ? runLen(t) : 0;
+      html += `<div class="tube${done ? " done" : ""}${i === sel ? " sel" : ""}${i >= tubes.length - (extraUsed ? 1 : 0) && extraUsed ? " extra" : ""}" data-i="${i}" style="--n:${t.length}">`;
+      t.forEach((c, k) => { html += ballHTML(c, k >= t.length - up ? "up" : ""); });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  board.innerHTML = html;
+}
+
+/* --- ходы --- */
+board.addEventListener("pointerdown", e => {
+  const tube = e.target.closest(".tube"); if (!tube) return;
+  tap(+tube.dataset.i);
+});
+function tap(i) {
+  if (sel === -1) {
+    const t = tubes[i];
+    if (!t.length) return;
+    if (t.length === CAP && t.every(x => x === t[0])) { sfx.bad(); return; }
+    sel = i; sfx.pick(); render(); return;
+  }
+  if (i === sel) { sel = -1; render(); return; }
+  if (!canMove(tubes, sel, i)) {
+    if (tubes[i].length && !(tubes[i].length === CAP && tubes[i].every(x => x === tubes[i][0]))) { sel = i; sfx.pick(); render(); return; }
+    sfx.bad(); sel = -1; render(); return;
+  }
+  move(sel, i);
+}
+function move(a, b) {
+  // запоминаем, где были поднятые шарики
+  const fromEls = [...board.querySelectorAll(`.tube[data-i="${a}"] .ball.up`)];
+  const fromRects = fromEls.map(el => el.getBoundingClientRect()).reverse();   // сверху вниз
+  history.push(tubes.map(x => x.slice()));
+  const n = doMove(tubes, a, b); moves++;
+  sel = -1; render();
+  // анимация полёта
+  const toEls = [...board.querySelectorAll(`.tube[data-i="${b}"] .ball`)].slice(-n).reverse();
+  toEls.forEach((el, k) => {
+    const s = fromRects[k] || fromRects[0]; if (!s) return;
+    const d = el.getBoundingClientRect();
+    const dx = s.left - d.left, dy = s.top - d.top;
+    const peak = Math.min(s.top, d.top) - 30 - d.top;
+    el.animate([
+      { transform: `translate(${dx}px,${dy}px)` },
+      { transform: `translate(${dx / 2}px,${peak}px)`, offset: .45 },
+      { transform: "translate(0,0)" }
+    ], { duration: 300 + k * 50, easing: "cubic-bezier(.4,.1,.3,1)" });
+  });
+  sfx.drop();
+  const T = tubes[b];
+  if (T.length === CAP && T.every(x => x === T[0])) {
+    setTimeout(() => { sfx.done(); burst(board.querySelector(`.tube[data-i="${b}"]`), 14); }, 300);
+  }
+  updateHud();
+  if (isSolved(tubes)) setTimeout(win, 650);
+  else if (!hasMoves()) toast("Ходов больше нет! Отмени ход, возьми колбу или начни заново");
+  else if (save.level <= 2) setTip("");
+}
+function hasMoves() {
+  for (let a = 0; a < tubes.length; a++) for (let b = 0; b < tubes.length; b++)
+    if (canMove(tubes, a, b) && !(tubes[a].length === CAP && tubes[a].every(x => x === tubes[a][0]))) {
+      if (!tubes[b].length && runLen(tubes[a]) === tubes[a].length) continue;
+      return true;
+    }
+  return false;
+}
+
+/* --- кнопки --- */
+$("#tUndo").onclick = () => {
+  if (!history.length) return;
+  const doUndo = () => { tubes = history.pop(); sel = -1; render(); updateHud(); sfx.pick(); };
+  if (undosLeft > 0) { undosLeft--; doUndo(); return; }
+  modal({ title: "Отмены закончились", body: "<p>Посмотри рекламу — получишь ещё 5 отмен на этот уровень.</p>",
+    buttons: [{ text: "📺 +5 отмен", cls: "gold", fn: () => Platform.rewarded(() => { undosLeft = 4; doUndo(); }) }, { text: "Не надо", cls: "ghost" }] });
+};
+$("#tHint").onclick = () => {
+  if (isSolved(tubes)) return;
+  modal({ title: "Подсказка", body: "<p>Покажу лучший следующий ход. Посмотришь короткую рекламу?</p>",
+    buttons: [{ text: "📺 Показать ход", cls: "gold", fn: () => Platform.rewarded(showHint) }, { text: "Сам справлюсь", cls: "ghost" }] });
+};
+function showHint() {
+  const path = solve(tubes, 60000);
+  if (!path || !path.length) { toast("Отсюда не выбраться — отмени пару ходов или возьми колбу"); return; }
+  const [a, b] = path[0]; sel = a; render(); sfx.pick();
+  board.querySelector(`.tube[data-i="${b}"]`).classList.add("hint");
+  setTip("Подсказка: нажми на мигающую колбу — шарик полетит туда", true);
+}
+$("#tTube").onclick = () => {
+  if (extraUsed) return;
+  modal({ title: "Лишняя колба", body: "<p>Добавлю пустую колбу на этот уровень. Посмотришь рекламу?</p>",
+    buttons: [{ text: "📺 Взять колбу", cls: "gold", fn: () => Platform.rewarded(() => { extraUsed = true; tubes.push([]); history.forEach(h => h.push([])); sel = -1; render(); updateHud(); sfx.done(); }) },
+              { text: "Не надо", cls: "ghost" }] });
+};
+$("#tRestart").onclick = () => {
+  modal({ title: "Начать заново?", body: "<p>Шарики вернутся на старые места. Можно и пропустить уровень за рекламу.</p>",
+    buttons: [{ text: "↻ Заново", fn: () => { const lvl = save.level; startLevel(); } },
+              { text: "📺 Пропустить уровень", cls: "gold", fn: () => Platform.rewarded(() => { save.level++; store(); startLevel(); }) },
+              { text: "Отмена", cls: "ghost" }] });
+};
+
+/* --- победа --- */
+function win() {
+  sfx.win(); confetti();
+  const base = 10 + Math.floor(save.level / 5) * 2;
+  const secs = Math.round((Date.now() - levelStartedAt) / 1000);
+  modal({
+    title: `Уровень ${save.level} пройден!`,
+    body: `<div class="stars">⭐⭐⭐</div><p>Ходов: ${moves} · время: ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}</p>
+           <div class="big-reward"><span class="coin" style="width:32px;height:32px"></span>+${base}</div>`,
+    buttons: [
+      { text: `📺 Забрать ×3 (+${base * 3})`, cls: "gold", fn: () => Platform.rewarded(() => next(base * 3, true)) },
+      { text: "Дальше", cls: "green", fn: () => next(base, false) }
+    ], noClose: true
+  });
+}
+function next(reward, watched) {
+  save.coins += reward; save.level++; store(); sfx.coin();
+  // межстраничная реклама: с 4-го уровня, не чаще раза в 3 минуты, и не сразу после рекламы за награду
+  if (!watched && save.level > 4 && Date.now() - lastAdAt > 180000) Platform.interstitial();
+  startLevel();
+}
+
+/* ============ ОКНА ============ */
+const overlay = $("#overlay");
+function modal({ title, body, buttons = [{ text: "Ок" }], noClose }) {
+  overlay.innerHTML = `<div class="modal"><h2>${title}</h2>${body}<div class="btns"></div></div>`;
+  const box = overlay.querySelector(".btns");
+  buttons.forEach(b => {
+    const el = document.createElement("button"); el.className = "btn " + (b.cls || ""); el.textContent = b.text;
+    el.onclick = () => { closeModal(); b.fn && b.fn(); }; box.append(el);
+  });
+  overlay.classList.add("show");
+  overlay.onpointerdown = e => { if (e.target === overlay && !noClose) closeModal(); };
+}
+function closeModal() { overlay.classList.remove("show"); overlay.innerHTML = ""; }
+
+/* магазин */
+$("#bShop").onclick = openShop;
+function openShop() {
+  const items = THEMES.map(t => {
+    const own = save.owned.includes(t.id), cur = save.theme === t.id;
+    const prev = [0, 4, 5].map(c => `<div class="ball" style="--c:${COLORS[c].c}"></div>`).join("");
+    return `<div class="item${cur ? " cur" : ""}" data-id="${t.id}"><div class="prev th-${t.id}">${prev}</div>
+      <div class="nm">${t.name}</div><div class="pr">${cur ? "✅ Выбрано" : own ? "Выбрать" : `<span class="coin"></span>${t.price}`}</div></div>`;
+  }).join("");
+  modal({ title: "Стили шариков", body: `<p>Монетки даются за каждый уровень. У тебя: <b>${save.coins}</b></p><div class="shop">${items}</div>`, buttons: [{ text: "Закрыть", cls: "ghost" }] });
+  overlay.querySelectorAll(".item").forEach(el => el.onclick = () => {
+    const t = THEMES.find(x => x.id === el.dataset.id);
+    if (save.owned.includes(t.id)) { save.theme = t.id; }
+    else if (save.coins >= t.price) { save.coins -= t.price; save.owned.push(t.id); save.theme = t.id; sfx.coin(); }
+    else { sfx.bad(); el.querySelector(".pr").textContent = `Нужно ещё ${t.price - save.coins}`; return; }
+    store(); render(); updateHud(); openShop();
+  });
+}
+/* настройки */
+$("#bSet").onclick = openSettings;
+function openSettings() {
+  modal({ title: "Настройки", body: `
+    <div class="set-row">🔊 Звук <button class="switch${save.sound ? " on" : ""}" data-k="sound"></button></div>
+    <div class="set-row">★ Значки на шариках <button class="switch${save.symbols ? " on" : ""}" data-k="symbols"></button></div>
+    <p style="font-size:13px;color:#7a6fae">Значки помогают, если цвета сливаются</p>`, buttons: [{ text: "Готово", cls: "ghost" }] });
+  overlay.querySelectorAll(".switch").forEach(s => s.onclick = () => {
+    save[s.dataset.k] = !save[s.dataset.k]; s.classList.toggle("on"); store(); render();
+  });
+}
+
+/* ежедневный подарок */
+function today() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function checkDaily() {
+  const t = today(); if (save.daily.day === t) return;
+  const y = new Date(Date.now() - 864e5); const yest = `${y.getFullYear()}-${y.getMonth() + 1}-${y.getDate()}`;
+  const streak = save.daily.day === yest ? Math.min(save.daily.streak + 1, 7) : 1;
+  const amount = 20 + streak * 10;
+  const give = mult => { save.coins += amount * mult; save.daily = { day: t, streak }; store(); updateHud(); sfx.coin(); };
+  modal({ title: "Подарок дня 🎁", body: `<p>День ${streak} подряд. Заходи каждый день — подарок растёт!</p>
+      <div class="big-reward"><span class="coin" style="width:32px;height:32px"></span>+${amount}</div>`,
+    buttons: [{ text: `📺 Забрать ×2 (+${amount * 2})`, cls: "gold", fn: () => Platform.rewarded(() => give(2)) },
+              { text: "Забрать", cls: "green", fn: () => give(1) }], noClose: true });
+}
+
+/* эффекты */
+function burst(el, n) {
+  if (!el) return; const r = el.getBoundingClientRect();
+  for (let i = 0; i < n; i++) spawnBit(r.left + r.width / 2, r.top + 10, COLORS[i % COLORS.length].c, 500);
+}
+function confetti() { for (let i = 0; i < 60; i++) spawnBit(innerWidth * Math.random(), -20, COLORS[i % COLORS.length].c, 1400 + Math.random() * 800, true); }
+function spawnBit(x, y, color, dur, fall) {
+  const d = document.createElement("div"); d.className = "confetti"; d.style.background = color;
+  d.style.left = x + "px"; d.style.top = y + "px"; document.body.append(d);
+  const dx = (Math.random() - .5) * (fall ? 200 : 160), dy = fall ? innerHeight + 40 : -60 - Math.random() * 80;
+  d.animate([{ transform: "translate(0,0) rotate(0)", opacity: 1 }, { transform: `translate(${dx}px,${dy}px) rotate(${Math.random() * 720}deg)`, opacity: fall ? 1 : 0 }],
+    { duration: dur, easing: fall ? "cubic-bezier(.2,.6,.4,1)" : "ease-out" }).onfinish = () => d.remove();
+}
+
+/* пауза звука, когда вкладка скрыта */
+document.addEventListener("visibilitychange", () => { try { if (actx) document.hidden ? actx.suspend() : actx.resume(); } catch (e) {} });
+addEventListener("resize", () => render());
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+/* ============ СТАРТ ============ */
+(async () => {
+  loadSave();
+  await Platform.init();
+  $("#loading").remove();
+  startLevel();
+  Platform.ready();
+  setTimeout(checkDaily, 400);
+})();
+</script>
+</body>
+</html>
