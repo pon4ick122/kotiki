@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Самоцветы: Блоки</title>
+<style>
+:root{
+  --bg1:#0f1033; --bg2:#2a1257; --ink:#fff; --muted:#b9b3e6;
+  --accent:#ffc83d; --accent-d:#c98a00; --violet:#8b5cf6; --violet-d:#6236d8;
+  --green:#2fd08a; --green-d:#1a9c64; --card:#1d1846; --card-b:#ffffff22;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none}
+body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 20% 0%,#5b2bbd55 0,transparent 45%),radial-gradient(circle at 100% 100%,#0fb5ae33 0,transparent 40%),linear-gradient(170deg,var(--bg1),var(--bg2));
+  display:flex;justify-content:center}
+#app{width:100%;max-width:520px;height:100%;display:flex;flex-direction:column;
+  padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom));gap:8px}
+#hud{display:flex;align-items:center;gap:8px}
+.icon-btn{width:46px;height:46px;flex:none;border:1px solid #ffffff2e;border-radius:14px;background:#ffffff16;color:#fff;font-size:22px;cursor:pointer;display:grid;place-items:center}
+.icon-btn:active,.btn:active,.tool:active{transform:scale(.95)}
+#scoreBox{flex:1;text-align:center;line-height:1}
+#score{font-size:34px;font-weight:900;letter-spacing:1px;text-shadow:0 3px 0 #0006}
+#best{font-size:13px;color:var(--muted);font-weight:700;margin-top:3px}
+#goal{font-size:13px;color:var(--accent);font-weight:800;margin-top:3px;display:none}
+.pill{background:#ffffff16;border:1px solid #ffffff2e;border-radius:16px;padding:7px 12px;display:flex;align-items:center;gap:7px;font-weight:900;font-size:19px}
+.coin{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffc300 45%,#d98e04);box-shadow:inset 0 -2px 0 #b06d00;flex:none;display:inline-block;vertical-align:middle}
+#stage{flex:1;position:relative;min-height:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#tools{display:flex;gap:10px;justify-content:center}
+.tool{flex:1;max-width:200px;border:none;border-radius:16px;padding:9px 6px;font:inherit;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
+  background:linear-gradient(#ffffff22,#ffffff10);border:1px solid #ffffff2e;display:flex;align-items:center;justify-content:center;gap:6px}
+.tool b{font-size:20px}
+.tool .price{background:#0005;border-radius:10px;padding:2px 7px;font-size:13px;display:flex;align-items:center;gap:4px}
+.tool .price .coin{width:14px;height:14px}
+.tool.on{background:linear-gradient(var(--accent),var(--accent-d));color:#3a2600}
+
+#overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:#07061acc;backdrop-filter:blur(3px);z-index:10}
+#overlay.show{display:flex}
+.card{width:100%;max-width:400px;max-height:100%;overflow:auto;background:linear-gradient(170deg,#2a2163,#1a1442);border:1px solid var(--card-b);border-radius:24px;padding:22px 20px;text-align:center;box-shadow:0 20px 60px #0008;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.card h1{margin:0 0 4px;font-size:34px;letter-spacing:1px}
+.card h2{margin:0 0 8px;font-size:26px}
+.card p{margin:6px 0 14px;color:var(--muted);font-size:15px;line-height:1.35}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;border:none;border-radius:16px;padding:14px;margin-top:10px;font:inherit;font-size:18px;font-weight:900;color:#fff;cursor:pointer;
+  background:linear-gradient(var(--violet),var(--violet-d));box-shadow:0 4px 0 #3c1f94}
+.btn.gold{background:linear-gradient(var(--accent),var(--accent-d));color:#3a2600;box-shadow:0 4px 0 #8a5d00}
+.btn.green{background:linear-gradient(var(--green),var(--green-d));box-shadow:0 4px 0 #0f6b43}
+.btn.ghost{background:#ffffff14;box-shadow:none;border:1px solid #ffffff2e;font-size:16px;padding:11px}
+.btn small{font-size:12px;opacity:.85;font-weight:700}
+.btn .done{font-size:14px}
+.big-num{font-size:52px;font-weight:900;margin:4px 0;text-shadow:0 4px 0 #0006}
+.row{display:flex;gap:10px}.row .btn{flex:1}
+.logo{display:flex;justify-content:center;gap:6px;margin:4px 0 8px}
+.logo i{width:30px;height:30px;border-radius:7px;display:block;transform:rotate(45deg);box-shadow:inset 0 0 0 3px #ffffff55,0 4px 10px #0006}
+.stat{display:flex;justify-content:space-between;background:#ffffff10;border-radius:14px;padding:10px 14px;margin:6px 0;font-weight:800}
+.stat span:first-child{color:var(--muted);font-weight:700}
+.xpbar{height:8px;background:#ffffff1a;border-radius:5px;overflow:hidden;margin:4px 0 2px}
+.xpbar div{height:100%;background:linear-gradient(90deg,#2fd08a,#ffc83d)}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:10px 0}
+.day{background:#ffffff12;border-radius:10px;padding:6px 0;font-size:12px;font-weight:800;color:var(--muted)}
+.day.got{background:#2fd08a44;color:#fff}.day.now{background:linear-gradient(var(--accent),var(--accent-d));color:#3a2600}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.th{background:#ffffff10;border:2px solid transparent;border-radius:16px;padding:10px 6px;cursor:pointer;font-weight:800;font-size:14px}
+.th.cur{border-color:var(--accent)}
+.th canvas{display:block;margin:0 auto 6px;width:96px;height:48px}
+.th .st{font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:4px}
+.th .st .coin{width:13px;height:13px}
+.toggle{display:flex;justify-content:space-between;align-items:center;background:#ffffff10;border-radius:14px;padding:12px 14px;margin:8px 0;font-weight:800;cursor:pointer}
+.sw{width:46px;height:26px;border-radius:13px;background:#ffffff30;position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--green)}.sw.on::after{left:23px}
+#toast{position:fixed;left:50%;top:78px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:14px;font-weight:700;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+.fakead{position:fixed;inset:0;background:#000e;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;z-index:50}
+.fakead b{font-size:60px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <button class="icon-btn" id="bMenu" title="Меню">☰</button>
+    <div id="scoreBox"><div id="score">0</div><div id="best">Рекорд: 0</div><div id="goal"></div></div>
+    <div class="pill"><span class="coin"></span><span id="coins">0</span></div>
+  </div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="tools">
+    <button class="tool" id="tBomb"><b>💣</b>Бомба<span class="price" id="pBomb"></span></button>
+    <button class="tool" id="tSwap"><b>🔄</b>Обновить<span class="price" id="pSwap"></span></button>
+  </div>
+</div>
+<div id="overlay"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= ПЛАТФОРМА: VK / Яндекс / itch ================= */
+let lastAdAt = 0;
+const Platform = {
+  kind: "local", sdk: null, vkAppId: null,
+  async init() {
+    const m = location.search.match(/(?:^|[?&])vk_app_id=(\d+)/);
+    if (m) {
+      this.vkAppId = m[1];
+      try { await loadScript("vk-bridge.min.js"); await vkBridge.send("VKWebAppInit"); this.sdk = vkBridge; this.kind = "vk"; }
+      catch (e) { console.warn("VK Bridge не загрузился", e); }
+    } else if (/yandex|playhop/.test(location.hostname)) {
+      try { await loadScript("/sdk.js"); this.sdk = await YaGames.init(); this.kind = "yandex"; }
+      catch (e) { console.warn("Yandex SDK не загрузился", e); }
+    } else if (/itch\.io|itch\.zone|hwcdn/.test(location.hostname)) {
+      this.kind = "noads";
+    }
+  },
+  hasAds() { return this.kind !== "noads"; },
+  ready() { try { this.kind === "yandex" && this.sdk.features.LoadingAPI.ready(); } catch (e) {} },
+  gameplay(on) { try { this.kind === "yandex" && this.sdk.features.GameplayAPI[on ? "start" : "stop"](); } catch (e) {} },
+  rewarded(onReward) {
+    if (this.kind === "noads") { onReward(); return; }
+    lastAdAt = Date.now();
+    const fail = () => { setAdMute(false); toast("Реклама пока недоступна, попробуй чуть позже"); };
+    if (this.kind === "vk") {
+      setAdMute(true);
+      this.sdk.send("VKWebAppShowNativeAds", { ad_format: "reward" })
+        .then(d => { setAdMute(false); d && d.result ? onReward() : fail(); }).catch(fail);
+      return;
+    }
+    if (this.kind === "yandex") {
+      let got = false;
+      this.sdk.adv.showRewardedVideo({ callbacks: {
+        onOpen: () => setAdMute(true), onRewarded: () => { got = true; },
+        onClose: () => { setAdMute(false); if (got) onReward(); }, onError: fail }});
+      return;
+    }
+    fakeAd(onReward);
+  },
+  interstitial() {
+    if (!this.hasAds() || this.kind === "local") return;
+    lastAdAt = Date.now();
+    if (this.kind === "vk") {
+      setAdMute(true);
+      this.sdk.send("VKWebAppShowNativeAds", { ad_format: "interstitial" }).catch(() => {}).finally(() => setAdMute(false));
+    } else if (this.kind === "yandex") {
+      this.sdk.adv.showFullscreenAdv({ callbacks: { onOpen: () => setAdMute(true), onClose: () => setAdMute(false), onError: () => setAdMute(false) }});
+    }
+  },
+  favorites() { if (this.kind === "vk") this.sdk.send("VKWebAppAddToFavorites").catch(() => {}); },
+  share(score) {
+    if (this.kind !== "vk") return;
+    this.sdk.send("VKWebAppShowWallPostBox", {
+      message: `Мой рекорд в «Самоцветах»: ${score} очков 💎 Сможешь больше?`,
+      attachments: `https://vk.com/app${this.vkAppId}` }).catch(() => {});
+  }
+};
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); }); }
+function fakeAd(cb) {
+  const o = document.createElement("div"); o.className = "fakead"; let n = 3;
+  o.innerHTML = `<div>📺 Тут будет реклама<br><b>${n}</b><br><small>(заглушка для теста)</small></div>`;
+  document.body.append(o); setAdMute(true);
+  const iv = setInterval(() => { n--; if (n <= 0) { clearInterval(iv); o.remove(); setAdMute(false); cb && cb(); } else o.querySelector("b").textContent = n; }, 1000);
+}
+
+/* ================= ЗВУК ================= */
+let actx = null, adMuted = false;
+function setAdMute(m) { adMuted = m; }
+function beep(freq, dur = .08, type = "sine", vol = .16, slide = 0, delay = 0) {
+  if (!save.sound || adMuted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + delay;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+    g.gain.setValueAtTime(0.0001, actx.currentTime); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .02);
+  } catch (e) {}
+}
+const sfx = {
+  pick: () => beep(600, .05, "triangle", .12, 1.3),
+  drop: () => beep(260, .08, "sine", .22, .6),
+  bad: () => beep(150, .1, "square", .06),
+  clear: n => { const base = [0, 523, 587, 659, 784, 880, 988][Math.min(n, 6)]; for (let i = 0; i < 3 + n; i++) beep(base * Math.pow(1.122, i), .14, "triangle", .13, 1, i * .05); },
+  coin: () => { beep(988, .08, "square", .07); beep(1319, .14, "square", .07, 1, .07); },
+  boom: () => { beep(120, .35, "sawtooth", .2, .3); beep(80, .4, "sine", .25, .5, .03); },
+  over: () => { beep(392, .2, "triangle", .14, 1, 0); beep(330, .2, "triangle", .14, 1, .18); beep(262, .4, "triangle", .14, .8, .36); },
+  win: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, .2, "triangle", .15, 1, i * .1))
+};
+function buzz(ms) { if (save.vibro) try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+/* ================= СОХРАНЕНИЕ ================= */
+const SAVE_KEY = "samocvety_v1";
+let save = {
+  best: 0, coins: 0, xp: 0, games: 0, sound: true, vibro: true,
+  theme: "gem", owned: ["gem"], gift: { day: "", streak: 0 },
+  daily: { day: "", done: false, streak: 0, lastDone: "" }, favAsked: false, run: null
+};
+function loadSave() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d) save = Object.assign(save, d); } catch (e) {} }
+function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+const dayStr = (d = new Date()) => d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayStr(d); };
+
+/* ================= ТЕМЫ (СТИЛИ КАМНЕЙ) ================= */
+const THEMES = {
+  gem:   { name: "Самоцветы", price: 0,   kind: "gem",   colors: ["#e8364f", "#ffb627", "#2ecc71", "#2f8cff", "#9b5de5", "#ff7a2f", "#14c8c8"] },
+  candy: { name: "Конфеты",   price: 300, kind: "candy", colors: ["#ff6fa5", "#ffd166", "#7ee081", "#6ec6ff", "#c39bff", "#ff9f68", "#59e3d0"] },
+  neon:  { name: "Неон",      price: 600, kind: "neon",  colors: ["#ff2e88", "#ffe14d", "#39ff88", "#33b5ff", "#b04dff", "#ff8a1f", "#1fffe0"] },
+  gold:  { name: "Сокровища", price: 1000, kind: "gem",  colors: ["#f5c542", "#c9ced6", "#d08a45", "#f29e9e", "#e6e0b8", "#ffd27a", "#9fd3c7"] }
+};
+const shadeCache = {};
+function shade(hex, amt) {
+  const k = hex + amt; if (shadeCache[k]) return shadeCache[k];
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const t = amt < 0 ? 0 : 255, p = Math.abs(amt);
+  r = Math.round(r + (t - r) * p); g = Math.round(g + (t - g) * p); b = Math.round(b + (t - b) * p);
+  return (shadeCache[k] = `rgb(${r},${g},${b})`);
+}
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function poly(c, pts, fill) { c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.closePath(); c.fillStyle = fill; c.fill(); }
+function drawCell(c, x, y, s, ci, themeId = save.theme, alpha = 1) {
+  const th = THEMES[themeId], col = th.colors[ci % th.colors.length], g = Math.max(1, s * .04);
+  x += g; y += g; s -= g * 2;
+  c.save(); c.globalAlpha = alpha;
+  if (th.kind === "gem") {
+    const d = s * .2, X = x + s, Y = y + s;
+    rr(c, x, y, s, s, s * .12); c.clip();
+    poly(c, [x, y, X, y, X - d, y + d, x + d, y + d], shade(col, .45));
+    poly(c, [X, y, X, Y, X - d, Y - d, X - d, y + d], shade(col, -.22));
+    poly(c, [x, Y, X, Y, X - d, Y - d, x + d, Y - d], shade(col, -.42));
+    poly(c, [x, y, x, Y, x + d, Y - d, x + d, y + d], shade(col, .18));
+    const gr = c.createLinearGradient(x + d, y + d, X - d, Y - d);
+    gr.addColorStop(0, shade(col, .15)); gr.addColorStop(1, shade(col, -.08));
+    c.fillStyle = gr; c.fillRect(x + d, y + d, s - 2 * d, s - 2 * d);
+    c.fillStyle = "rgba(255,255,255,.55)";
+    c.beginPath(); c.moveTo(x + d * 1.4, y + d * 1.4); c.lineTo(x + d * 2.6, y + d * 1.4); c.lineTo(x + d * 1.4, y + d * 2.6); c.closePath(); c.fill();
+  } else if (th.kind === "candy") {
+    rr(c, x, y, s, s, s * .32);
+    const gr = c.createRadialGradient(x + s * .35, y + s * .3, s * .1, x + s * .5, y + s * .5, s * .75);
+    gr.addColorStop(0, shade(col, .35)); gr.addColorStop(1, shade(col, -.25));
+    c.fillStyle = gr; c.fill();
+    c.fillStyle = "rgba(255,255,255,.5)";
+    c.beginPath(); c.ellipse(x + s * .42, y + s * .25, s * .26, s * .11, -.3, 0, Math.PI * 2); c.fill();
+  } else {
+    rr(c, x + 1, y + 1, s - 2, s - 2, s * .18);
+    c.fillStyle = shade(col, -.72); c.fill();
+    c.shadowColor = col; c.shadowBlur = s * .35; c.lineWidth = Math.max(2, s * .09); c.strokeStyle = col; c.stroke();
+    c.shadowBlur = 0; rr(c, x + s * .3, y + s * .3, s * .4, s * .4, s * .08); c.fillStyle = shade(col, -.3); c.fill();
+  }
+  c.restore();
+}
+
+/* ================= ФИГУРЫ ================= */
+const SHAPES = [];
+function addShape(rows, w, rot = true) {
+  let cells = []; rows.forEach((r, y) => [...r].forEach((ch, x) => ch === "#" && cells.push([y, x])));
+  const seen = new Set();
+  for (let k = 0; k < (rot ? 4 : 1); k++) {
+    const minR = Math.min(...cells.map(c => c[0])), minC = Math.min(...cells.map(c => c[1]));
+    cells = cells.map(([r, c]) => [r - minR, c - minC]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const key = JSON.stringify(cells);
+    if (!seen.has(key)) { seen.add(key); SHAPES.push({ cells: cells.map(c => c.slice()), w }); }
+    cells = cells.map(([r, c]) => [c, -r]);
+  }
+}
+// w — вес (чем больше, тем чаще), делится на число поворотов автоматически ниже
+addShape(["#"], 6, false);
+addShape(["##"], 9); addShape(["###"], 9); addShape(["####"], 6); addShape(["#####"], 3);
+addShape(["##", "##"], 10, false); addShape(["###", "###", "###"], 3, false);
+addShape(["##", "#."], 8); addShape(["###", "#..", "#.."], 4);
+addShape(["###", "#.."], 7); addShape(["###", "..#"], 7);
+addShape(["###", ".#."], 6); addShape(["##.", ".##"], 5); addShape([".##", "##."], 5);
+addShape(["###", "###"], 4);
+addShape(["#.", ".#"], 2);
+
+/* ================= СОСТОЯНИЕ ИГРЫ ================= */
+const N = 8;
+let G = null;          // текущая партия
+function rng() { // mulberry32
+  if (!G || G.mode !== "daily") return Math.random();
+  let t = (G.seed += 0x6D2B79F5); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+function newGame(mode) {
+  const daily = mode === "daily";
+  G = { mode, board: Array(N * N).fill(-1), tray: [null, null, null], score: 0, combo: 0, miss: 0,
+        continued: false, seed: daily ? hashStr("samocvety" + dayStr()) : 0, over: false, won: false,
+        goal: daily ? 1500 + (hashStr(dayStr()) % 6) * 200 : 0, moves: 0 };
+  fillTray(); persist(); updateHud(); Platform.gameplay(true);
+}
+function persist() { save.run = G && !G.over ? G : null; store(); }
+
+function pickShape() {
+  const hard = G.mode === "daily" ? 1 : Math.min(1.6, 1 + G.score / 6000);
+  const ws = SHAPES.map(s => s.cells.length >= 5 ? s.w * hard : s.cells.length <= 2 ? s.w / hard : s.w);
+  let r = rng() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < SHAPES.length; i++) { r -= ws[i]; if (r <= 0) return SHAPES[i]; }
+  return SHAPES[0];
+}
+function makePiece(shape) {
+  const h = Math.max(...shape.cells.map(c => c[0])) + 1, w = Math.max(...shape.cells.map(c => c[1])) + 1;
+  return { cells: shape.cells, w, h, color: Math.floor(rng() * 7) };
+}
+function fillTray(easy = false) {
+  // честная раздача: стараемся, чтобы хотя бы одна фигура влезала
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const set = [0, 1, 2].map(() => makePiece(easy ? SHAPES.filter(s => s.cells.length <= 3)[Math.floor(rng() * 6)] : pickShape()));
+    if (set.some(p => anyFit(p)) || attempt === 29) { G.tray = set; return; }
+  }
+}
+function canPlace(p, r, c, board = G.board) {
+  for (const [dr, dc] of p.cells) {
+    const rr_ = r + dr, cc = c + dc;
+    if (rr_ < 0 || cc < 0 || rr_ >= N || cc >= N || board[rr_ * N + cc] >= 0) return false;
+  }
+  return true;
+}
+function anyFit(p) { for (let r = 0; r <= N - p.h; r++) for (let c = 0; c <= N - p.w; c++) if (canPlace(p, r, c)) return true; return false; }
+function fullLines(board) {
+  const rows = [], cols = [];
+  for (let i = 0; i < N; i++) {
+    let fr = true, fc = true;
+    for (let j = 0; j < N; j++) { if (board[i * N + j] < 0) fr = false; if (board[j * N + i] < 0) fc = false; }
+    if (fr) rows.push(i); if (fc) cols.push(i);
+  }
+  return { rows, cols };
+}
+
+function place(slot, r, c) {
+  const p = G.tray[slot];
+  p.cells.forEach(([dr, dc]) => G.board[(r + dr) * N + c + dc] = p.color);
+  G.tray[slot] = null; G.moves++;
+  let gained = p.cells.length;
+  const { rows, cols } = fullLines(G.board), n = rows.length + cols.length;
+  if (n) {
+    G.combo++; G.miss = 0;
+    const cells = new Set();
+    rows.forEach(i => { for (let j = 0; j < N; j++) cells.add(i * N + j); });
+    cols.forEach(i => { for (let j = 0; j < N; j++) cells.add(j * N + i); });
+    cells.forEach(k => { burst(k, G.board[k]); G.board[k] = -1; });
+    let pts = 20 * n * n * Math.max(1, G.combo);
+    let msg = n >= 4 ? "Невероятно!" : n === 3 ? "Супер!" : n === 2 ? "Отлично!" : "";
+    if (G.board.every(v => v < 0)) { pts += 300; msg = "Чистое поле! +300"; }
+    gained += pts;
+    sfx.clear(n + Math.min(G.combo - 1, 3)); buzz(n > 1 ? 40 : 20);
+    const cx = boardRect.x + (c + p.w / 2) * cell, cy = boardRect.y + (r + p.h / 2) * cell;
+    popText("+" + pts, cx, cy, "#fff", 1);
+    if (G.combo >= 2) popText("Комбо ×" + G.combo, boardRect.x + boardRect.s / 2, boardRect.y + boardRect.s * .35, "#ffc83d", 1.3);
+    if (msg) popText(msg, boardRect.x + boardRect.s / 2, boardRect.y + boardRect.s * .5, "#7ef0c0", 1.5);
+    shake = Math.min(12, 4 + n * 2);
+  } else {
+    G.miss++; if (G.miss >= 3) G.combo = 0;
+    sfx.drop(); buzz(10);
+  }
+  G.score += gained;
+  if (G.tray.every(t => !t)) fillTray();
+  updateHud();
+  if (G.mode === "daily" && !G.won && G.score >= G.goal) { G.won = true; persist(); setTimeout(dailyWin, 600); return; }
+  checkOver(); persist();
+}
+function checkOver() {
+  if (G.tray.some(t => t && anyFit(t))) return;
+  G.over = true; Platform.gameplay(false);
+  setTimeout(showNoMoves, 650);
+}
+
+/* ================= ОТРИСОВКА ================= */
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, dpr = 1, cell = 40, boardRect = { x: 0, y: 0, s: 320 }, slots = [];
+let drag = null, parts = [], pops = [], flashes = [], shake = 0, bombMode = false, hoverBomb = -1;
+function layout() {
+  const r = cv.getBoundingClientRect(); dpr = Math.min(3, window.devicePixelRatio || 1);
+  W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr;
+  const s = Math.floor(Math.min(W, H / 1.42));
+  cell = s / N; boardRect = { x: (W - s) / 2, y: Math.max(0, (H - s * 1.42) / 2), s };
+  const ty = boardRect.y + s + s * .04, th = s * .36, sw = s / 3;
+  slots = [0, 1, 2].map(i => ({ x: boardRect.x + i * sw, y: ty, w: sw, h: th }));
+}
+function trayScale(p, sl) { return Math.min(cell * .58, (sl.w * .82) / p.w, (sl.h * .82) / p.h); }
+function slotOf(x, y) { return slots.findIndex(s => x >= s.x && x < s.x + s.w && y >= s.y - 10 && y < s.y + s.h + 10); }
+
+function frame(t) {
+  requestAnimationFrame(frame);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  if (!G) return;
+  let sx = 0, sy = 0;
+  if (shake > .3) { sx = (Math.random() - .5) * shake; sy = (Math.random() - .5) * shake; shake *= .86; }
+  ctx.save(); ctx.translate(sx, sy);
+  const { x: bx, y: by, s } = boardRect;
+  rr(ctx, bx - 6, by - 6, s + 12, s + 12, 18); ctx.fillStyle = "#0a0826aa"; ctx.fill();
+  ctx.strokeStyle = "#ffffff22"; ctx.lineWidth = 1.5; ctx.stroke();
+  // подсказка куда встанет фигура
+  let ghost = null, clearSet = null;
+  if (drag && drag.target) {
+    ghost = drag.target;
+    const test = G.board.slice(); const p = G.tray[drag.slot];
+    p.cells.forEach(([dr, dc]) => test[(ghost.r + dr) * N + ghost.c + dc] = p.color);
+    const { rows, cols } = fullLines(test);
+    if (rows.length || cols.length) { clearSet = new Set(); rows.forEach(i => { for (let j = 0; j < N; j++) clearSet.add(i * N + j); }); cols.forEach(i => { for (let j = 0; j < N; j++) clearSet.add(j * N + i); }); }
+  }
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const k = r * N + c, x = bx + c * cell, y = by + r * cell, v = G.board[k];
+    if (v >= 0) {
+      drawCell(ctx, x, y, cell, clearSet && clearSet.has(k) && drag ? G.tray[drag.slot].color : v);
+      if (clearSet && clearSet.has(k)) { ctx.fillStyle = `rgba(255,255,255,${.18 + .12 * Math.sin(t / 90)})`; rr(ctx, x + 2, y + 2, cell - 4, cell - 4, cell * .14); ctx.fill(); }
+    } else {
+      rr(ctx, x + cell * .06, y + cell * .06, cell * .88, cell * .88, cell * .14); ctx.fillStyle = "#ffffff0d"; ctx.fill();
+    }
+  }
+  if (ghost) G.tray[drag.slot].cells.forEach(([dr, dc]) => drawCell(ctx, bx + (ghost.c + dc) * cell, by + (ghost.r + dr) * cell, cell, G.tray[drag.slot].color, save.theme, .38));
+  if (bombMode && hoverBomb >= 0) {
+    const r0 = Math.floor(hoverBomb / N), c0 = hoverBomb % N;
+    ctx.fillStyle = "rgba(255,80,60,.35)";
+    rr(ctx, bx + Math.max(0, c0 - 1) * cell, by + Math.max(0, r0 - 1) * cell, (Math.min(N - 1, c0 + 1) - Math.max(0, c0 - 1) + 1) * cell, (Math.min(N - 1, r0 + 1) - Math.max(0, r0 - 1) + 1) * cell, 10); ctx.fill();
+  }
+  // вспышки исчезающих камней
+  flashes = flashes.filter(f => (f.life -= 1 / 30) > 0);
+  flashes.forEach(f => { const k = 1 + (1 - f.life) * .4, sz = cell * k; drawCell(ctx, f.x + cell / 2 - sz / 2, f.y + cell / 2 - sz / 2, sz, f.color, save.theme, f.life); });
+  // лоток
+  slots.forEach((sl, i) => {
+    const p = G.tray[i]; if (!p || (drag && drag.slot === i)) return;
+    const k = trayScale(p, sl), ox = sl.x + (sl.w - p.w * k) / 2, oy = sl.y + (sl.h - p.h * k) / 2;
+    const fits = anyFit(p);
+    p.cells.forEach(([dr, dc]) => drawCell(ctx, ox + dc * k, oy + dr * k, k, p.color, save.theme, fits ? 1 : .3));
+  });
+  ctx.restore();
+  // фигура в пальце
+  if (drag) {
+    const p = G.tray[drag.slot], k = cell * drag.grow;
+    drag.grow += (1 - drag.grow) * .35;
+    p.cells.forEach(([dr, dc]) => drawCell(ctx, drag.px + dc * k, drag.py + dr * k, k, p.color));
+  }
+  // частицы
+  parts = parts.filter(q => (q.life -= .02) > 0);
+  parts.forEach(q => { q.x += q.vx; q.y += q.vy; q.vy += .25; ctx.globalAlpha = q.life; ctx.fillStyle = q.col; ctx.fillRect(q.x, q.y, q.sz, q.sz); });
+  ctx.globalAlpha = 1;
+  pops = pops.filter(q => (q.life -= .012) > 0);
+  pops.forEach(q => {
+    q.y -= .6; ctx.globalAlpha = Math.min(1, q.life * 2.5);
+    ctx.font = `900 ${Math.round(cell * .55 * q.size)}px "Trebuchet MS",sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = 6; ctx.strokeStyle = "#1a0f40"; ctx.strokeText(q.text, q.x, q.y); ctx.fillStyle = q.col; ctx.fillText(q.text, q.x, q.y);
+  });
+  ctx.globalAlpha = 1;
+}
+function burst(k, color) {
+  const x = boardRect.x + (k % N) * cell, y = boardRect.y + Math.floor(k / N) * cell;
+  flashes.push({ x, y, color, life: 1 });
+  const col = THEMES[save.theme].colors[color];
+  for (let i = 0; i < 5; i++) parts.push({ x: x + cell / 2, y: y + cell / 2, vx: (Math.random() - .5) * 7, vy: (Math.random() - .9) * 6, sz: 3 + Math.random() * 4, col, life: 1 });
+}
+function popText(text, x, y, col, size) { pops.push({ text, x, y, col, size, life: 1 }); }
+
+/* ================= УПРАВЛЕНИЕ ================= */
+function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function cellAt(x, y) {
+  const c = Math.floor((x - boardRect.x) / cell), r = Math.floor((y - boardRect.y) / cell);
+  return r >= 0 && c >= 0 && r < N && c < N ? r * N + c : -1;
+}
+function updateDrag(x, y) {
+  const p = G.tray[drag.slot], lift = cell * (matchMedia("(pointer:coarse)").matches ? 1.9 : .9);
+  drag.px = x - p.w * cell / 2; drag.py = y - p.h * cell - lift + cell * .4;
+  const c = Math.round((drag.px - boardRect.x) / cell), r = Math.round((drag.py - boardRect.y) / cell);
+  drag.target = canPlace(p, r, c) ? { r, c } : null;
+}
+cv.addEventListener("pointerdown", e => {
+  if (!G || G.over) return;
+  const { x, y } = pos(e);
+  if (bombMode) { const k = cellAt(x, y); if (k >= 0) useBomb(k); return; }
+  const i = slotOf(x, y);
+  if (i < 0 || !G.tray[i]) return;
+  const sl = slots[i], p = G.tray[i];
+  drag = { slot: i, grow: trayScale(p, sl) / cell, target: null, id: e.pointerId };
+  updateDrag(x, y); sfx.pick();
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+});
+cv.addEventListener("pointermove", e => {
+  const { x, y } = pos(e);
+  if (bombMode) { hoverBomb = cellAt(x, y); return; }
+  if (drag && e.pointerId === drag.id) updateDrag(x, y);
+});
+const endDrag = e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const d = drag; drag = null;
+  if (d.target) place(d.slot, d.target.r, d.target.c);
+};
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) drag = null; });
+
+/* ================= УСИЛИТЕЛИ ================= */
+const PRICE = { bomb: 60, swap: 40 };
+function buyOrAd(price, fn) {
+  if (save.coins >= price) { save.coins -= price; sfx.coin(); fn(); store(); updateHud(); }
+  else Platform.rewarded(() => { fn(); store(); updateHud(); });
+}
+document.getElementById("tBomb").onclick = () => {
+  if (!G || G.over) return;
+  if (bombMode) { bombMode = false; updateHud(); return; }
+  bombMode = true; hoverBomb = -1; updateHud(); toast("Нажми на клетку — бомба снесёт квадрат 3×3");
+};
+function useBomb(k) {
+  bombMode = false; hoverBomb = -1;
+  buyOrAd(PRICE.bomb, () => {
+    const r0 = Math.floor(k / N), c0 = k % N;
+    for (let r = r0 - 1; r <= r0 + 1; r++) for (let c = c0 - 1; c <= c0 + 1; c++)
+      if (r >= 0 && c >= 0 && r < N && c < N && G.board[r * N + c] >= 0) { burst(r * N + c, G.board[r * N + c]); G.board[r * N + c] = -1; }
+    sfx.boom(); buzz(60); shake = 14; persist();
+  });
+  updateHud();
+}
+document.getElementById("tSwap").onclick = () => {
+  if (!G || G.over) return;
+  buyOrAd(PRICE.swap, () => { fillTray(); sfx.pick(); persist(); });
+};
+
+/* ================= ИНТЕРФЕЙС ================= */
+const $ = id => document.getElementById(id);
+function updateHud() {
+  $("coins").textContent = save.coins;
+  if (G) {
+    $("score").textContent = G.score;
+    const daily = G.mode === "daily";
+    $("best").style.display = daily ? "none" : ""; $("goal").style.display = daily ? "block" : "none";
+    $("best").textContent = "Рекорд: " + Math.max(save.best, G.score);
+    $("goal").textContent = "🎯 Испытание дня: " + Math.min(G.score, G.goal) + " / " + G.goal;
+  }
+  const priceHtml = p => save.coins >= p ? `<span class="coin"></span>${p}` : "📺";
+  $("pBomb").innerHTML = priceHtml(PRICE.bomb); $("pSwap").innerHTML = priceHtml(PRICE.swap);
+  $("tBomb").classList.toggle("on", bombMode);
+}
+let toastT = 0;
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
+function show(html) { const o = $("overlay"); o.innerHTML = `<div class="card">${html}</div>`; o.classList.add("show"); }
+function hide() { $("overlay").classList.remove("show"); }
+const coinsTxt = n => `<span class="coin"></span> ${n}`;
+function level() { let l = 1, need = 500, xp = save.xp; while (xp >= need) { xp -= need; l++; need = Math.round(need * 1.25); } return { l, xp, need }; }
+const LOGO = `<div class="logo">${["#e8364f", "#ffb627", "#2ecc71", "#2f8cff", "#9b5de5"].map(c => `<i style="background:linear-gradient(135deg,${c},${shade(c, -.35)})"></i>`).join("")}</div>`;
+
+function menu() {
+  Platform.gameplay(false);
+  const lv = level(), canResume = G && !G.over;
+  const dailyDone = save.daily.day === dayStr() && save.daily.done;
+  show(`${LOGO}<h1>Самоцветы</h1>
+    <div class="stat"><span>🏆 Рекорд</span><span>${save.best}</span></div>
+    <div class="stat"><span>⭐ Уровень ${lv.l}</span><span>${lv.xp} / ${lv.need}</span></div>
+    <div class="xpbar"><div style="width:${Math.round(lv.xp / lv.need * 100)}%"></div></div>
+    ${canResume ? `<button class="btn green" id="mResume">▶ Продолжить</button>` : ""}
+    <button class="btn ${canResume ? "" : "green"}" id="mNew">${canResume ? "Новая игра" : "▶ Играть"}</button>
+    <button class="btn gold" id="mDaily">🎯 Испытание дня ${dailyDone ? '<span class="done">✔ пройдено</span>' : ""}</button>
+    <div class="row"><button class="btn ghost" id="mThemes">🎨 Стили</button><button class="btn ghost" id="mSet">⚙️ Настройки</button></div>`);
+  if (canResume) $("mResume").onclick = () => { hide(); Platform.gameplay(true); };
+  $("mNew").onclick = () => { maybeAd(); hide(); newGame("classic"); };
+  $("mDaily").onclick = () => {
+    if (dailyDone) { toast("Сегодня уже пройдено! Новое испытание завтра"); return; }
+    maybeAd(); hide(); newGame("daily");
+    toast("Набери " + G.goal + " очков. Фигуры сегодня у всех одинаковые!");
+  };
+  $("mThemes").onclick = themes; $("mSet").onclick = settings;
+}
+function maybeAd() { if (save.games >= 2 && Date.now() - lastAdAt > 180000) Platform.interstitial(); }
+
+function showNoMoves() {
+  sfx.over();
+  const canCont = !G.continued;
+  show(`<h2>Ходов нет 😮</h2><div class="big-num">${G.score}</div>
+    <p>${canCont ? "Посмотри рекламу: уберём лишние камни и дадим лёгкие фигуры" : "Это было круто!"}</p>
+    ${canCont ? `<button class="btn green" id="oCont">📺 Продолжить</button>` : ""}
+    <button class="btn ${canCont ? "ghost" : ""}" id="oEnd">${canCont ? "Нет, закончить" : "Дальше"}</button>`);
+  if (canCont) $("oCont").onclick = () => Platform.rewarded(() => { revive(); hide(); });
+  $("oEnd").onclick = finish;
+}
+function revive() {
+  G.continued = true; G.over = false;
+  // убираем 3 самых заполненных ряда и 3 столбца
+  const rowFill = [...Array(N).keys()].map(i => [i, G.board.slice(i * N, i * N + N).filter(v => v >= 0).length]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const colFill = [...Array(N).keys()].map(i => [i, [...Array(N).keys()].filter(j => G.board[j * N + i] >= 0).length]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  rowFill.forEach(([i]) => { for (let j = 0; j < N; j++) { const k = i * N + j; if (G.board[k] >= 0) { burst(k, G.board[k]); G.board[k] = -1; } } });
+  colFill.forEach(([i]) => { for (let j = 0; j < N; j++) { const k = j * N + i; if (G.board[k] >= 0) { burst(k, G.board[k]); G.board[k] = -1; } } });
+  fillTray(true); sfx.boom(); shake = 12; persist(); Platform.gameplay(true);
+}
+function finish() {
+  const daily = G.mode === "daily";
+  const earned = Math.floor(G.score / 40);
+  const record = !daily && G.score > save.best;
+  if (record) save.best = G.score;
+  save.xp += G.score; save.games++; save.coins += earned; G.over = true; save.run = null; store(); updateHud();
+  if (record) sfx.win(); else sfx.coin();
+  let doubled = false;
+  show(`<h2>${record ? "🏆 Новый рекорд!" : daily ? "Испытание не пройдено" : "Итог"}</h2>
+    <div class="big-num">${G.score}</div>
+    ${daily ? `<p>Цель была ${G.goal}. Попробуй ещё раз!</p>` : `<p>Рекорд: ${save.best}</p>`}
+    <div class="stat"><span>Монеты за игру</span><span id="earned">${coinsTxt(earned)}</span></div>
+    ${earned > 0 ? `<button class="btn gold" id="oDouble">📺 Удвоить монеты</button>` : ""}
+    ${Platform.kind === "vk" && record ? `<button class="btn ghost" id="oShare">📣 Похвастаться рекордом</button>` : ""}
+    <button class="btn green" id="oAgain">↻ Ещё раз</button>
+    <button class="btn ghost" id="oMenu">Меню</button>`);
+  if (earned > 0) $("oDouble").onclick = () => { if (doubled) return; Platform.rewarded(() => { doubled = true; save.coins += earned; store(); updateHud(); sfx.coin(); $("earned").innerHTML = coinsTxt(earned * 2); $("oDouble").remove(); }); };
+  if ($("oShare")) $("oShare").onclick = () => Platform.share(G.score);
+  $("oAgain").onclick = () => { maybeAd(); hide(); newGame(daily ? "daily" : "classic"); };
+  $("oMenu").onclick = () => { maybeAd(); menu(); };
+  if (Platform.kind === "vk" && save.games === 2 && !save.favAsked) { save.favAsked = true; store(); setTimeout(() => Platform.favorites(), 1200); }
+}
+function dailyWin() {
+  const t = dayStr();
+  const streak = save.daily.lastDone === yesterday() ? save.daily.streak + 1 : 1;
+  const reward = 100 + Math.min(streak - 1, 6) * 25;
+  save.daily = { day: t, done: true, streak, lastDone: t };
+  save.coins += reward; save.xp += G.score; save.games++; G.over = true; save.run = null; store(); updateHud();
+  sfx.win(); Platform.gameplay(false);
+  show(`<h2>🎯 Испытание пройдено!</h2><div class="big-num">${G.score}</div>
+    <p>Серия: ${streak} ${streak === 1 ? "день" : streak < 5 ? "дня" : "дней"} подряд 🔥<br>Завтра будет новое испытание, а с серией награда больше</p>
+    <div class="stat"><span>Награда</span><span>${coinsTxt(reward)}</span></div>
+    <button class="btn gold" id="oDouble">📺 Удвоить награду</button>
+    <button class="btn green" id="oPlay">▶ Обычная игра</button>
+    <button class="btn ghost" id="oMenu">Меню</button>`);
+  $("oDouble").onclick = () => Platform.rewarded(() => { save.coins += reward; store(); updateHud(); sfx.coin(); $("oDouble").remove(); });
+  $("oPlay").onclick = () => { hide(); newGame("classic"); };
+  $("oMenu").onclick = menu;
+}
+
+/* ===== подарок дня ===== */
+const GIFTS = [30, 40, 50, 70, 90, 120, 250];
+function dailyGift(after) {
+  const t = dayStr();
+  if (save.gift.day === t) { after(); return; }
+  const streak = save.gift.day === yesterday() ? save.gift.streak % 7 + 1 : 1;
+  const amount = GIFTS[streak - 1];
+  show(`<h2>🎁 Подарок дня</h2><p>Заходи каждый день: награда растёт!</p>
+    <div class="days">${GIFTS.map((g, i) => `<div class="day ${i + 1 < streak ? "got" : i + 1 === streak ? "now" : ""}">День ${i + 1}<br>${g}</div>`).join("")}</div>
+    <div class="big-num" style="font-size:40px">${coinsTxt(amount)}</div>
+    <button class="btn gold" id="gX2">📺 Забрать ×2</button>
+    <button class="btn ghost" id="gX1">Забрать</button>`);
+  const give = m => { save.coins += amount * m; save.gift = { day: t, streak }; store(); updateHud(); sfx.coin(); after(); };
+  $("gX2").onclick = () => Platform.rewarded(() => give(2));
+  $("gX1").onclick = () => give(1);
+}
+
+/* ===== стили ===== */
+function themes() {
+  show(`<h2>🎨 Стили камней</h2><p>Монеты дают за каждую партию, испытания и подарки</p>
+    <div class="themes">${Object.entries(THEMES).map(([id, t]) => `
+      <div class="th ${save.theme === id ? "cur" : ""}" data-id="${id}"><canvas width="192" height="96"></canvas>${t.name}
+      <div class="st">${save.theme === id ? "выбран" : save.owned.includes(id) ? "есть" : `<span class="coin"></span>${t.price}`}</div></div>`).join("")}</div>
+    <button class="btn" id="tBack">Назад</button>`);
+  document.querySelectorAll(".th").forEach(el => {
+    const id = el.dataset.id, c = el.querySelector("canvas").getContext("2d");
+    c.fillStyle = "#0a0826"; rr(c, 0, 0, 192, 96, 14); c.fill();
+    [0, 1, 2, 3].forEach(i => drawCell(c, 8 + i * 44, 4 + (i % 2) * 44, 44, i * 2, id));
+    [0, 1, 2, 3].forEach(i => drawCell(c, 8 + i * 44, 48 - (i % 2) * 44, 44, i * 2 + 1, id));
+    el.onclick = () => {
+      if (save.owned.includes(id)) { save.theme = id; store(); themes(); return; }
+      const t = THEMES[id];
+      if (save.coins < t.price) { toast(`Не хватает ${t.price - save.coins} монет`); sfx.bad(); return; }
+      save.coins -= t.price; save.owned.push(id); save.theme = id; store(); updateHud(); sfx.win(); themes();
+    };
+  });
+  $("tBack").onclick = menu;
+}
+function settings() {
+  show(`<h2>⚙️ Настройки</h2>
+    <div class="toggle" id="sSound"><span>🔊 Звук</span><div class="sw ${save.sound ? "on" : ""}"></div></div>
+    <div class="toggle" id="sVibro"><span>📳 Вибрация</span><div class="sw ${save.vibro ? "on" : ""}"></div></div>
+    <p>Как играть: перетаскивай фигуры на поле. Собери полный ряд или столбец, и он исчезнет. Чем больше линий за раз и подряд, тем больше очков.</p>
+    <button class="btn" id="sBack">Назад</button>`);
+  $("sSound").onclick = () => { save.sound = !save.sound; store(); settings(); };
+  $("sVibro").onclick = () => { save.vibro = !save.vibro; store(); settings(); };
+  $("sBack").onclick = menu;
+}
+$("bMenu").onclick = () => { bombMode = false; updateHud(); menu(); };
+
+/* ================= СТАРТ ================= */
+window.addEventListener("resize", layout);
+document.addEventListener("visibilitychange", () => {
+  try { if (actx) document.hidden ? actx.suspend() : actx.resume(); } catch (e) {}
+  if (document.hidden) persist();
+});
+document.addEventListener("contextmenu", e => e.preventDefault());
+(async function start() {
+  loadSave();
+  await Platform.init();
+  layout(); requestAnimationFrame(frame);
+  if (save.run && save.run.board) { G = save.run; } else newGame("classic");
+  updateHud();
+  Platform.ready();
+  dailyGift(() => { if (save.games === 0 && G.moves === 0) { hide(); toast("Перетащи фигуру на поле 👇"); Platform.gameplay(true); } else menu(); });
+})();
+</script>
+</body>
+</html>
