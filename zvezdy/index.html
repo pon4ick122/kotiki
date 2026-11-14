@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Звёзды дня: гороскоп и таро</title>
+<style>
+:root{
+  --bg1:#0b0a24; --bg2:#1d1247; --ink:#fff; --muted:#b8b2e0; --gold:#ffd27a; --gold-d:#d69a2c;
+  --card:#ffffff10; --card-b:#ffffff24; --violet:#8b5cf6; --pink:#ff7ab6;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#0b0a24}
+html,body{margin:0;min-height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 15% 0%,#6a3bd155 0,transparent 45%),radial-gradient(circle at 100% 90%,#ff7ab626 0,transparent 40%),linear-gradient(170deg,var(--bg1),var(--bg2));
+  background-attachment:fixed;min-height:100%}
+#sky{position:fixed;inset:0;pointer-events:none;z-index:0}
+#app{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;
+  padding:max(14px,env(safe-area-inset-top)) 16px calc(86px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+header h1{font-size:19px;margin:0;flex:1;font-weight:800;letter-spacing:.2px}
+header h1 small{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.streak{background:#ff9a3c22;border:1px solid #ff9a3c66;color:#ffc58a;border-radius:14px;padding:6px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--card-b);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(6px)}
+.card h2{margin:0 0 8px;font-size:17px}
+.card p{margin:0 0 10px;line-height:1.5;font-size:15.5px}
+.card p:last-child{margin-bottom:0}
+.muted{color:var(--muted)}
+.sign-head{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.sign-sym{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:36px;font-family:"Segoe UI Symbol","DejaVu Sans",serif;flex:none;
+  background:radial-gradient(circle at 35% 30%,#ffe7b0,#ffbe4a 55%,#c98418);color:#3a1d00;box-shadow:0 0 24px #ffc85a55}
+.sign-head b{font-size:21px;display:block}
+.sign-head span{font-size:13.5px;color:var(--muted)}
+.change{margin-left:auto;background:none;border:1px solid var(--card-b);color:var(--muted);border-radius:12px;padding:7px 10px;font-size:13px;cursor:pointer}
+.meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
+.meter{background:#ffffff0c;border-radius:14px;padding:9px 6px;text-align:center;font-size:12.5px;color:var(--muted)}
+.meter b{display:block;font-size:17px;color:#fff;margin-top:2px}
+.bar{height:5px;border-radius:3px;background:#ffffff1a;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--gold))}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:16px;padding:14px;font-size:16px;font-weight:800;cursor:pointer;color:#2b1600;
+  background:linear-gradient(180deg,#ffe19a,var(--gold-d));box-shadow:0 4px 0 #8c5a0e,0 8px 20px #0005;margin-top:10px}
+.btn.ghost{background:#ffffff14;color:#fff;box-shadow:none;border:1px solid var(--card-b)}
+.btn.violet{background:linear-gradient(180deg,#a98bff,#6c3ff0);color:#fff;box-shadow:0 4px 0 #3f1fa3,0 8px 20px #0005}
+.btn:active{transform:translateY(2px)}
+.ad{font-size:11px;font-weight:800;background:#0003;border-radius:6px;padding:2px 6px;letter-spacing:.3px}
+.locked{position:relative}
+.locked .blur{filter:blur(6px);user-select:none;pointer-events:none;opacity:.7}
+.lucky{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{background:#ffffff12;border-radius:12px;padding:7px 10px;font-size:13.5px}
+.chip b{color:var(--gold)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;
+  background:#0b0a24ee;border-top:1px solid #ffffff1c;padding:6px 6px calc(6px + env(safe-area-inset-bottom));backdrop-filter:blur(10px)}
+nav .in{display:flex;max-width:520px;width:100%}
+nav button{flex:1;background:none;border:0;color:var(--muted);font-size:11.5px;font-weight:700;padding:6px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:12px}
+nav button i{font-style:normal;font-size:23px;filter:grayscale(.6);opacity:.75}
+nav button.on{color:#fff;background:#ffffff12}
+nav button.on i{filter:none;opacity:1}
+/* знаки */
+.grid12{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.zbtn{background:#ffffff10;border:1px solid var(--card-b);border-radius:16px;color:#fff;padding:12px 4px;cursor:pointer;text-align:center}
+.zbtn i{font-style:normal;font-size:30px;display:block;color:var(--gold);font-family:"Segoe UI Symbol","DejaVu Sans",serif}
+.zbtn b{font-size:14px;display:block;margin-top:3px}
+.zbtn small{font-size:11px;color:var(--muted)}
+.zbtn.sel{border-color:var(--gold);background:#ffd27a22}
+/* таро */
+.tarot-wrap{display:flex;justify-content:center;gap:10px;perspective:900px;margin:6px 0 12px}
+.tcard{width:150px;height:240px;position:relative;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,1.4,.5,1);cursor:pointer}
+.tcard.small{width:96px;height:156px}
+.tcard.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px}
+.back{background:repeating-linear-gradient(45deg,#2a1a6b 0 10px,#22145a 10px 20px);border:2px solid var(--gold-d);box-shadow:inset 0 0 0 6px #1a0f45,inset 0 0 0 8px #d69a2c88}
+.back::after{content:"✦";font-size:44px;color:var(--gold)}
+.front{transform:rotateY(180deg);background:linear-gradient(170deg,#fff6df,#f1d9a4);color:#3a1d00;border:2px solid var(--gold-d)}
+.front .num{font-size:13px;font-weight:800;letter-spacing:2px;opacity:.7}
+.front .em{font-size:58px;margin:10px 0}
+.tcard.small .front .em{font-size:36px;margin:4px 0}
+.front .nm{font-size:16px;font-weight:900}
+.tcard.small .front .nm{font-size:12px}
+.slot{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+.yn{display:inline-block;font-weight:900;color:var(--gold);font-size:18px}
+/* печенька */
+.cookie{font-size:110px;text-align:center;cursor:pointer;user-select:none;transition:transform .15s;margin:6px 0}
+.cookie:active{transform:scale(.92) rotate(-6deg)}
+.cookie.crack{animation:crack .6s forwards}
+@keyframes crack{30%{transform:rotate(-12deg) scale(1.1)}60%{transform:rotate(10deg) scale(1.15)}100%{transform:scale(0);opacity:0}}
+.paper{background:linear-gradient(180deg,#fffaf0,#f3e4c2);color:#3a2a10;border-radius:6px;padding:18px 16px;font-size:17px;line-height:1.45;text-align:center;font-weight:600;
+  box-shadow:0 6px 18px #0006;transform:rotate(-1.2deg);animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.3) rotate(-10deg);opacity:0}}
+/* совместимость */
+.pair{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pick{flex:1;background:#ffffff10;border:1px solid var(--card-b);border-radius:16px;color:#fff;padding:12px 6px;text-align:center;cursor:pointer;font-size:14px;font-weight:700}
+.pick i{font-style:normal;font-size:30px;display:block;color:var(--gold);font-family:"Segoe UI Symbol","DejaVu Sans",serif}
+.heart{font-size:30px}
+.big{font-size:52px;font-weight:900;text-align:center;background:linear-gradient(90deg,var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;margin:6px 0}
+/* оверлей */
+#overlay{position:fixed;inset:0;z-index:20;background:#05041acc;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+#overlay.show{display:flex}
+.sheet{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:linear-gradient(180deg,#24185c,#140d38);border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));animation:up .25s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h2{margin:0 0 12px;font-size:19px;text-align:center}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+.fakead{position:fixed;inset:0;z-index:50;background:#000e;display:grid;place-items:center;text-align:center;font-size:20px}
+.fakead b{font-size:48px}
+.foot{font-size:11.5px;color:#8f89bd;text-align:center;margin:14px 0 4px;line-height:1.4}
+.fade{animation:fade .35s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div id="app">
+  <header>
+    <h1 id="hTitle">Звёзды дня<small id="hDate"></small></h1>
+    <div class="streak" id="streak" title="Дней подряд"></div>
+  </header>
+  <main id="view"></main>
+  <div class="foot">Прогнозы составлены для развлечения и хорошего настроения ✨</div>
+</div>
+<nav><div class="in">
+  <button data-tab="horo"><i>🔮</i>Гороскоп</button>
+  <button data-tab="tarot"><i>🃏</i>Таро</button>
+  <button data-tab="cookie"><i>🥠</i>Печенька</button>
+  <button data-tab="love"><i>💞</i>Пара</button>
+</div></nav>
+<div id="overlay"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= ПЛАТФОРМА ================= */
+const APP_URL = "https://vk.com/app54898242";
+let lastAdAt = Date.now();
+const Platform = {
+  kind: "local", sdk: null,
+  async init() {
+    if (/(?:^|[?&])vk_app_id=\d+/.test(location.search)) {
+      try { await loadScript("vk-bridge.min.js"); await vkBridge.send("VKWebAppInit"); this.sdk = vkBridge; this.kind = "vk"; }
+      catch (e) { console.warn("VK Bridge не загрузился", e); }
+    } else if (/itch\.io|itch\.zone|hwcdn/.test(location.hostname)) this.kind = "noads";
+  },
+  rewarded(onReward) {
+    if (this.kind === "noads") { onReward(); return; }
+    lastAdAt = Date.now();
+    const fail = () => toast("Реклама пока недоступна, попробуй чуть позже");
+    if (this.kind === "vk") {
+      this.sdk.send("VKWebAppShowNativeAds", { ad_format: "reward" })
+        .then(d => { d && d.result ? onReward() : fail(); }).catch(fail);
+      return;
+    }
+    fakeAd(onReward);
+  },
+  interstitial() {
+    if (this.kind !== "vk") return;
+    lastAdAt = Date.now();
+    this.sdk.send("VKWebAppShowNativeAds", { ad_format: "interstitial" }).catch(() => {});
+  },
+  async userInfo() {
+    if (this.kind !== "vk") return null;
+    try { return await this.sdk.send("VKWebAppGetUserInfo"); } catch (e) { return null; }
+  },
+  favorites() { if (this.kind === "vk") this.sdk.send("VKWebAppAddToFavorites").catch(() => {}); },
+  shareLink() {
+    if (this.kind === "vk") this.sdk.send("VKWebAppShare", { link: APP_URL }).catch(() => {});
+    else copyText(APP_URL);
+  },
+  story(dataUrl, fallbackText) {
+    if (this.kind !== "vk") { toast("Истории работают внутри ВКонтакте"); return; }
+    this.sdk.send("VKWebAppShowStoryBox", { background_type: "image", blob: dataUrl,
+      attachment: { text: "go_to", type: "url", url: APP_URL } })
+      .catch(() => this.sdk.send("VKWebAppShowWallPostBox", { message: fallbackText, attachments: APP_URL }).catch(() => {}));
+  }
+};
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.append(s); }); }
+function fakeAd(cb) {
+  const o = document.createElement("div"); o.className = "fakead"; let n = 3;
+  o.innerHTML = `<div>📺 Тут будет реклама<br><b>${n}</b><br><small>(заглушка для теста)</small></div>`;
+  document.body.append(o);
+  const iv = setInterval(() => { n--; if (n <= 0) { clearInterval(iv); o.remove(); cb && cb(); } else o.querySelector("b").textContent = n; }, 1000);
+}
+function copyText(t) { try { navigator.clipboard.writeText(t); toast("Ссылка скопирована"); } catch (e) {} }
+const $ = id => document.getElementById(id);
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2200); }
+
+/* ================= СЛУЧАЙНОСТЬ ПО ДАТЕ ================= */
+function hash(s) { let h = 1779033703 ^ s.length; for (let i = 0; i < s.length; i++) { h = Math.imul(h ^ s.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; }
+function rng(seed) { let a = hash(seed); return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+function dayKey(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+const TODAY = dayKey();
+const MONTHS = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const WDAYS = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+
+/* ================= ДАННЫЕ ================= */
+const SIGNS = [
+  { id: "aries", n: "Овен", s: "♈︎", d: "21 марта – 19 апреля", el: "fire", from: [3, 21] },
+  { id: "taurus", n: "Телец", s: "♉︎", d: "20 апреля – 20 мая", el: "earth", from: [4, 20] },
+  { id: "gemini", n: "Близнецы", s: "♊︎", d: "21 мая – 20 июня", el: "air", from: [5, 21] },
+  { id: "cancer", n: "Рак", s: "♋︎", d: "21 июня – 22 июля", el: "water", from: [6, 21] },
+  { id: "leo", n: "Лев", s: "♌︎", d: "23 июля – 22 августа", el: "fire", from: [7, 23] },
+  { id: "virgo", n: "Дева", s: "♍︎", d: "23 августа – 22 сентября", el: "earth", from: [8, 23] },
+  { id: "libra", n: "Весы", s: "♎︎", d: "23 сентября – 22 октября", el: "air", from: [9, 23] },
+  { id: "scorpio", n: "Скорпион", s: "♏︎", d: "23 октября – 21 ноября", el: "water", from: [10, 23] },
+  { id: "sagittarius", n: "Стрелец", s: "♐︎", d: "22 ноября – 21 декабря", el: "fire", from: [11, 22] },
+  { id: "capricorn", n: "Козерог", s: "♑︎", d: "22 декабря – 19 января", el: "earth", from: [12, 22] },
+  { id: "aquarius", n: "Водолей", s: "♒︎", d: "20 января – 18 февраля", el: "air", from: [1, 20] },
+  { id: "pisces", n: "Рыбы", s: "♓︎", d: "19 февраля – 20 марта", el: "water", from: [2, 19] },
+];
+const EL_NAME = { fire: "огонь", earth: "земля", air: "воздух", water: "вода" };
+function signByDate(day, month) {
+  // знак, у которого дата начала — последняя не позже даты рождения (до 20 января — Козерог)
+  const order = [...SIGNS].sort((a, b) => a.from[0] - b.from[0] || a.from[1] - b.from[1]);
+  let res = order[order.length - 1];
+  for (const s of order) if (month > s.from[0] || (month === s.from[0] && day >= s.from[1])) res = s;
+  return res;
+}
+
+const H = {
+  open: [
+    "Утро задаст спокойный темп, а к вечеру события закрутятся быстрее.",
+    "Сегодня звёзды на твоей стороне: многое получится с первого раза.",
+    "День подходит для того, чтобы закончить начатое и выдохнуть.",
+    "Возможна приятная неожиданность — будь открыт новому.",
+    "Энергии будет много, главное — не распыляться на мелочи.",
+    "Хороший день, чтобы взглянуть на старую задачу свежим взглядом.",
+    "Интуиция сегодня работает лучше любой логики — прислушайся к ней.",
+    "Не торопи события: всё нужное придёт само в своё время.",
+    "День обещает быть насыщенным, но приятным.",
+    "Звёзды советуют сделать первый шаг, даже если он маленький.",
+    "Сегодня особенно важно слушать, а не только говорить.",
+    "Удача прячется в деталях — присмотрись к мелочам.",
+    "День для новых знакомств и неожиданных разговоров.",
+    "Настроение может меняться, но итог дня будет хорошим.",
+    "Отличный момент, чтобы навести порядок — в делах и в мыслях.",
+    "Сегодня легко договориться почти с кем угодно.",
+    "День подходит для творчества и смелых идей.",
+    "Звёзды намекают: пора отпустить то, что тянет назад.",
+    "Тебя ждёт приятный разговор, который поднимет настроение.",
+    "Сегодня стоит довериться людям, которые рядом.",
+    "Луна в хорошем положении: планы складываются удачно.",
+    "Небольшая пауза в середине дня поможет сделать больше.",
+    "День проверит терпение, но наградит за спокойствие.",
+    "Хорошие новости могут прийти оттуда, откуда не ждёшь.",
+    "Сегодня легко учиться и запоминать новое.",
+    "День для честности: прямые слова сработают лучше намёков.",
+  ],
+  flavor: {
+    fire: ["Твой внутренний огонь заметят окружающие.", "Азарт поможет, но не спорь по пустякам.", "Смелость сегодня — твой главный козырь.", "Направь энергию в одно дело — и результат удивит.", "Не сжигай мосты: остынь перед важным решением."],
+    earth: ["Практичность выручит там, где другие растеряются.", "Шаг за шагом ты придёшь к цели быстрее всех.", "Твоя надёжность сегодня особенно ценна.", "Займись тем, что можно потрогать руками — это успокоит.", "Не бойся немного отступить от привычного плана."],
+    air: ["Слова сегодня обладают особой силой — выбирай их с умом.", "Свежая идея придёт в разговоре с другом.", "Лёгкость и юмор откроют любые двери.", "Мысли будут скакать — запиши самое важное.", "Новая информация поможет принять решение."],
+    water: ["Доверься чувствам — они не подведут.", "Твоя чуткость поможет кому-то из близких.", "Эмоции будут яркими: дай им выход в творчестве.", "Не принимай близко к сердцу чужое плохое настроение.", "Вода точит камень: мягкость сегодня сильнее напора."],
+  },
+  love: [
+    "В отношениях возможен тёплый разговор по душам.",
+    "Кто-то думает о тебе чаще, чем ты предполагаешь.",
+    "Небольшой знак внимания сделает чей-то день лучше.",
+    "Одиноким звёзды обещают интересное знакомство.",
+    "Не ищи подвох там, где его нет, — просто наслаждайся моментом.",
+    "Хороший день для свидания или совместной прогулки.",
+    "Старая обида может уйти, если первым сделать шаг навстречу.",
+    "Флирт сегодня даётся особенно легко.",
+    "Близкий человек ждёт от тебя поддержки — будь рядом.",
+    "Романтика прячется в простых вещах: чай, разговор, тишина вдвоём.",
+    "Не торопи чувства — пусть всё идёт своим чередом.",
+    "Сегодня легко сказать то, что давно хотелось.",
+    "Возможна встреча с человеком из прошлого.",
+    "Прояви инициативу — тебя оценят.",
+    "Ревность сегодня лишняя: доверие сделает больше.",
+    "Взаимная симпатия станет заметнее, чем обычно.",
+  ],
+  work: [
+    "В делах важна последовательность — не прыгай между задачами.",
+    "Твою идею могут оценить выше, чем ты думаешь.",
+    "Хороший день для учёбы, экзаменов и важных писем.",
+    "Не бери на себя чужую работу — свою бы успеть.",
+    "Сложная задача решится, если разбить её на части.",
+    "Начальство или преподаватели сегодня благосклонны.",
+    "Удачный момент, чтобы попросить о помощи или совете.",
+    "Командная работа принесёт больше, чем одиночная.",
+    "Отложи важные решения на вторую половину дня.",
+    "Проверь детали дважды — мелкая ошибка может стоить времени.",
+    "Сегодня легко сосредоточиться: используй это.",
+    "Новое предложение стоит хотя бы выслушать.",
+    "День для планирования, а не для резких рывков.",
+    "Твоё упорство скоро даст заметный результат.",
+  ],
+  money: [
+    "Финансовый день спокойный — без крупных трат.",
+    "Возможен небольшой, но приятный доход.",
+    "Не поддавайся импульсивным покупкам.",
+    "Хороший момент, чтобы отложить немного на мечту.",
+    "Деньги любят счёт: загляни в свои траты.",
+    "Подарок или скидка могут приятно удивить.",
+    "Одолжить сегодня — не лучшая идея.",
+    "Вложение в знания окупится с лихвой.",
+    "Найдётся способ сэкономить там, где не ожидал.",
+    "Удача в мелких покупках — бери то, что давно хотел.",
+  ],
+  health: [
+    "Больше воды и прогулок — и энергии хватит на всё.",
+    "Ляг пораньше: сон сегодня особенно важен.",
+    "Лёгкая зарядка поднимет настроение на весь день.",
+    "Не пропускай обед — организму нужна подпитка.",
+    "Отдохни от экрана хотя бы полчаса.",
+    "Хороший день для спорта и активности.",
+    "Береги горло и не переохлаждайся.",
+    "Музыка и тишина помогут восстановить силы.",
+    "Не бери на себя слишком много — береги нервы.",
+    "Свежий воздух сегодня лучше любого кофе.",
+  ],
+  colors: ["золотой", "изумрудный", "лиловый", "небесно-голубой", "алый", "белый", "бирюзовый", "персиковый", "серебристый", "тёмно-синий", "мятный", "коралловый"],
+  stones: ["аметист", "янтарь", "лунный камень", "бирюза", "гранат", "нефрит", "топаз", "кварц", "сапфир", "малахит"],
+};
+
+function horoscope(sign, day = TODAY) {
+  const r = rng(sign.id + "|" + day);
+  const love = 40 + Math.floor(r() * 61), work = 40 + Math.floor(r() * 61), mood = 40 + Math.floor(r() * 61);
+  return {
+    main: pick(r, H.open) + " " + pick(r, H.flavor[sign.el]),
+    love: pick(r, H.love), work: pick(r, H.work), money: pick(r, H.money), health: pick(r, H.health),
+    meters: { love, work, mood },
+    num: 1 + Math.floor(r() * 99), color: pick(r, H.colors), stone: pick(r, H.stones),
+    time: `${String(8 + Math.floor(r() * 13)).padStart(2, "0")}:${pick(r, ["00", "15", "30", "45"])}`,
+  };
+}
+
+const TAROT = [
+  ["0", "Шут", "🃏", "День для спонтанности и новых начинаний. Не бойся выглядеть смешно — смелость откроет неожиданные двери.", "Скажи «да» новому опыту.", "Да", "лёгкость"],
+  ["I", "Маг", "🪄", "У тебя есть всё, чтобы добиться своего. Сегодня слова и действия обретают особую силу.", "Действуй, а не жди.", "Да", "сила воли"],
+  ["II", "Жрица", "🌙", "Ответ уже внутри тебя. Тишина и наблюдение дадут больше, чем суета.", "Прислушайся к интуиции.", "Скорее да", "интуиция"],
+  ["III", "Императрица", "🌾", "День щедрости, уюта и заботы. Всё, во что вложишь душу, расцветёт.", "Побалуй себя и близких.", "Да", "изобилие"],
+  ["IV", "Император", "👑", "Порядок и чёткий план — твои союзники. Возьми ситуацию под контроль.", "Будь твёрд, но справедлив.", "Да", "стабильность"],
+  ["V", "Иерофант", "🗝️", "Хороший день, чтобы учиться и спрашивать совета у опытных людей.", "Опирайся на проверенное.", "Скорее да", "мудрость"],
+  ["VI", "Влюблённые", "💞", "Карта выбора и симпатии. Слушай сердце, но не забывай о голове.", "Сделай выбор по любви.", "Да", "выбор сердца"],
+  ["VII", "Колесница", "🏇", "Движение вперёд и победа. Держи курс — препятствия отступят.", "Не сворачивай с пути.", "Да", "победа"],
+  ["VIII", "Сила", "🦁", "Мягкость сильнее давления. Спокойствие поможет справиться с любой бурей.", "Укроти эмоции добротой.", "Да", "внутренняя сила"],
+  ["IX", "Отшельник", "🏮", "Время побыть с собой и подумать. Ответ найдётся в тишине.", "Возьми паузу.", "Скорее нет", "поиск себя"],
+  ["X", "Колесо Фортуны", "🎡", "Удача поворачивается к тебе лицом. Перемены будут к лучшему.", "Лови момент.", "Да", "удача"],
+  ["XI", "Справедливость", "⚖️", "Всё возвращается. Честность сегодня окупится сполна.", "Будь честен с собой.", "Скорее да", "равновесие"],
+  ["XII", "Повешенный", "🙃", "Посмотри на ситуацию под другим углом — и решение найдётся.", "Не спеши, подожди.", "Скорее нет", "новый взгляд"],
+  ["XIII", "Перемены", "🦋", "Что-то старое уходит, освобождая место новому. Это к лучшему.", "Отпусти лишнее.", "Скорее нет", "обновление"],
+  ["XIV", "Умеренность", "🏺", "Золотая середина — ключ дня. Не бросайся в крайности.", "Всё в меру.", "Скорее да", "гармония"],
+  ["XV", "Искушение", "😈", "Осторожно с соблазнами и лишними тратами. Не всё блестящее — золото.", "Сохрани голову холодной.", "Нет", "соблазн"],
+  ["XVI", "Башня", "🗼", "Возможна встряска, но она расчистит путь для чего-то настоящего.", "Будь гибким.", "Нет", "внезапность"],
+  ["XVII", "Звезда", "⭐", "Надежда и вдохновение. Мечты становятся ближе, чем кажутся.", "Верь в лучшее.", "Да", "надежда"],
+  ["XVIII", "Луна", "🌕", "Не всё так, как кажется. Проверь информацию, прежде чем действовать.", "Не верь слухам.", "Скорее нет", "тайна"],
+  ["XIX", "Солнце", "☀️", "Одна из самых счастливых карт! Радость, успех и тепло.", "Улыбайся — это работает.", "Да", "радость"],
+  ["XX", "Суд", "📯", "Время подвести итоги и услышать важный зов. Второй шанс рядом.", "Прими важное решение.", "Скорее да", "пробуждение"],
+  ["XXI", "Мир", "🌍", "Завершение цикла и заслуженная награда. Всё складывается.", "Отпразднуй успех.", "Да", "целостность"],
+].map(([num, name, em, text, advice, yn, key]) => ({ num, name, em, text, advice, yn, key }));
+
+const COOKIES = [
+  "Скоро ты получишь то, чего давно ждёшь.", "Твоя улыбка сегодня изменит чей-то день.", "Неожиданная встреча принесёт радость.",
+  "Смелый шаг откроет новую дорогу.", "Хорошая новость уже в пути.", "Кто-то тайно восхищается тобой.",
+  "Маленькая удача превратится в большую.", "Твоя идея окажется гениальной — не держи её в себе.", "Впереди путешествие, о котором ты мечтал.",
+  "Доверься себе — ты знаешь больше, чем думаешь.", "Деньги придут с неожиданной стороны.", "Старый друг напомнит о себе.",
+  "Сегодня лучший день, чтобы начать.", "То, что ты отдаёшь, вернётся вдвойне.", "Тебя ждёт приятный сюрприз до конца недели.",
+  "Твоё терпение скоро вознаградится.", "Счастье ближе, чем кажется: оглянись.", "Новая привычка изменит твою жизнь к лучшему.",
+  "Скоро ты будешь гордиться собой.", "Мечта, которую ты отложил, снова станет реальной.", "Кто-то ждёт твоего сообщения.",
+  "Неудача сегодня — ступенька к успеху завтра.", "Скоро всё встанет на свои места.", "Ты сильнее, чем думаешь.",
+  "Твоя доброта вернётся к тебе бумерангом.", "Впереди время приятных перемен.", "Ответ на твой вопрос — «да».",
+  "Хватит сомневаться — действуй!", "Сегодня звёзды исполняют маленькие желания. Загадай!", "Тебя ждёт вкусный вечер.",
+  "Новое знакомство окажется важным.", "Скоро ты услышишь слова, которые давно ждал.", "Твоя энергия заразительна — делись ею.",
+  "Подарок судьбы уже упакован.", "Шанс придёт в обычный будний день — не пропусти.", "Ты на правильном пути.",
+  "Всё, что нужно, — немного смелости.", "Скоро ты посмеёшься над тем, что сегодня тревожит.", "Удача любит тех, кто пробует.",
+  "Впереди много света и тепла.", "Кто-то хочет сказать тебе спасибо.", "Не бойся просить — тебе не откажут.",
+  "Твой талант скоро заметят.", "Лучшее ещё впереди.", "Сделай сегодня то, за что завтра скажешь себе спасибо.",
+  "Звёзды советуют: отдохни и порадуй себя.", "Ты встретишь человека, который вдохновит тебя.", "Маленькое доброе дело запустит цепочку чудес.",
+  "Совсем скоро тебе повезёт в том, где обычно не везёт.", "Тайное желание ближе к исполнению, чем кажется.",
+];
+
+const COMPAT = {
+  same: ["Вы говорите на одном языке и понимаете друг друга с полуслова.", "Похожий темперамент: вам легко вместе, но иногда не хватает новизны."],
+  good: ["Вы отлично дополняете друг друга: где один сомневается, другой вдохновляет.", "Сильная пара: вместе вы способны свернуть горы."],
+  mid: ["Вы разные, и в этом ваша сила — если учиться друг у друга.", "Будут искры и споры, но и много интересного."],
+  hard: ["Притяжение противоположностей: непросто, но очень ярко.", "Вам придётся договариваться, зато такие пары становятся самыми крепкими."],
+  tips: ["Чаще говорите о планах на будущее.", "Устраивайте маленькие сюрпризы без повода.", "Уважайте личное пространство друг друга.", "Смейтесь вместе — это лучший клей для пары.", "Не копите обиды — обсуждайте сразу.", "Найдите общее хобби."],
+};
+function relation(a, b) {
+  if (a.el === b.el) return "same";
+  const pair = [a.el, b.el].sort().join("+");
+  if (pair === "air+fire" || pair === "earth+water") return "good";
+  if (pair === "fire+water" || pair === "air+earth") return "hard";
+  return "mid";
+}
+function compat(a, b) {
+  const rel = relation(a, b), r = rng([a.id, b.id].sort().join("&"));
+  const base = { same: 78, good: 86, mid: 64, hard: 52 }[rel];
+  return { rel, pct: Math.min(99, base + Math.floor(r() * 13)), text: pick(r, COMPAT[rel]), tip: pick(r, COMPAT.tips),
+    love: Math.min(99, base - 6 + Math.floor(r() * 20)), friend: Math.min(99, base - 4 + Math.floor(r() * 18)), work: Math.min(99, base - 10 + Math.floor(r() * 24)) };
+}
+
+/* ================= СОХРАНЕНИЕ ================= */
+const save = Object.assign({ sign: null, last: null, streak: 0, best: 0, unlocked: {}, tarot: {}, cookie: {}, partner: null, opens: 0, favAsked: false }, load());
+function load() { try { return JSON.parse(localStorage.getItem("zvezdy") || "{}"); } catch (e) { return {}; } }
+function store() { try { localStorage.setItem("zvezdy", JSON.stringify(save)); } catch (e) {} }
+function touchStreak() {
+  if (save.last === TODAY) return;
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  save.streak = save.last === dayKey(y) ? save.streak + 1 : 1;
+  save.best = Math.max(save.best, save.streak);
+  save.last = TODAY; save.opens++;
+  // чистим старые дни
+  for (const k of ["unlocked", "tarot", "cookie"]) for (const d in save[k]) if (d !== TODAY) delete save[k][d];
+  store();
+}
+const sign = () => SIGNS.find(s => s.id === save.sign);
+const today = (k) => (save[k][TODAY] = save[k][TODAY] || {});
+
+/* ================= ЭКРАНЫ ================= */
+let tab = "horo", tabSwitches = 0;
+function setTab(t) {
+  if (t !== tab) { tabSwitches++; if (tabSwitches >= 3 && Date.now() - lastAdAt > 180000) Platform.interstitial(); }
+  tab = t;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  render(); window.scrollTo(0, 0);
+}
+function render() {
+  const v = $("view");
+  if (!sign()) { v.innerHTML = signPicker("Кто ты по знаку зодиака?"); bindPicker(s => { save.sign = s.id; store(); render(); }); return; }
+  ({ horo: renderHoro, tarot: renderTarot, cookie: renderCookie, love: renderLove })[tab](v);
+  v.firstElementChild && v.firstElementChild.classList.add("fade");
+}
+function signPicker(title) {
+  return `<div class="card"><h2 style="text-align:center">${title}</h2><div class="grid12">` +
+    SIGNS.map(s => `<button class="zbtn${save.sign === s.id ? " sel" : ""}" data-s="${s.id}"><i>${s.s}</i><b>${s.n}</b><small>${s.d.replace(" – ", "–")}</small></button>`).join("") + `</div></div>`;
+}
+function bindPicker(cb, root = document) { root.querySelectorAll(".zbtn").forEach(b => b.onclick = () => cb(SIGNS.find(s => s.id === b.dataset.s))); }
+const adLabel = `<span class="ad">РЕКЛАМА</span>`;
+
+function renderHoro(v) {
+  const s = sign(), h = horoscope(s), open = today("unlocked").horo === s.id;
+  const m = (label, val) => `<div class="meter">${label}<b>${val}%</b><div class="bar"><i style="width:${val}%"></i></div></div>`;
+  const details = `
+    <p>💞 <b>Любовь.</b> ${h.love}</p>
+    <p>💼 <b>Учёба и работа.</b> ${h.work}</p>
+    <p>💰 <b>Деньги.</b> ${h.money}</p>
+    <p>🌿 <b>Здоровье.</b> ${h.health}</p>
+    <div class="lucky"><span class="chip">Число: <b>${h.num}</b></span><span class="chip">Цвет: <b>${h.color}</b></span><span class="chip">Камень: <b>${h.stone}</b></span><span class="chip">Время: <b>${h.time}</b></span></div>`;
+  v.innerHTML = `<div>
+    <div class="card">
+      <div class="sign-head"><div class="sign-sym">${s.s}</div><div><b>${s.n}</b><span>${s.d} · стихия: ${EL_NAME[s.el]}</span></div>
+        <button class="change" id="chg">Сменить</button></div>
+      <h2>Гороскоп на сегодня</h2>
+      <p>${h.main}</p>
+      <div class="meters">${m("Любовь", h.meters.love)}${m("Дела", h.meters.work)}${m("Настроение", h.meters.mood)}</div>
+    </div>
+    <div class="card ${open ? "" : "locked"}">
+      <h2>Подробный прогноз</h2>
+      ${open ? details : `<div class="blur">${details}</div><button class="btn" id="unlock">🔓 Открыть подробный прогноз ${adLabel}</button>`}
+    </div>
+    <button class="btn violet" id="story">📸 Поделиться в истории</button>
+    <button class="btn ghost" id="other">👀 Гороскоп для друга</button>
+  </div>`;
+  $("chg").onclick = () => sheet(signPicker("Выбери свой знак"), r => bindPicker(n => { save.sign = n.id; store(); closeSheet(); render(); }, r));
+  if (!open) $("unlock").onclick = () => Platform.rewarded(() => { today("unlocked").horo = s.id; store(); render(); });
+  $("story").onclick = () => Platform.story(storyImage(s, h), `${s.s} ${s.n}, мой гороскоп на сегодня: ${h.main}`);
+  $("other").onclick = () => sheet(signPicker("Чей гороскоп посмотреть?"), r => bindPicker(n => {
+    const o = horoscope(n);
+    r.innerHTML = `<h2>${n.s} ${n.n} — сегодня</h2><div class="card"><p>${o.main}</p><p>💞 ${o.love}</p></div><button class="btn ghost" id="cls">Закрыть</button>`;
+    $("cls").onclick = closeSheet;
+  }, r));
+}
+
+function renderTarot(v) {
+  const t = today("tarot");
+  if (t.card == null) t.card = Math.floor(rng((save.sign || "") + "|tarot|" + TODAY)() * 22);
+  const c = TAROT[t.card];
+  const cardHtml = (x, cls = "", flip = false, id = "") => `<div class="tcard ${cls}${flip ? " flip" : ""}" ${id ? `id="${id}"` : ""}><div class="face back"></div>
+    <div class="face front"><div class="num">${x.num}</div><div class="em">${x.em}</div><div class="nm">${x.name}</div></div></div>`;
+  let spread = "";
+  if (t.spread) {
+    spread = `<div class="card fade"><h2>Расклад: прошлое · настоящее · будущее</h2><div class="tarot-wrap">` +
+      t.spread.map((i, k) => `<div>${cardHtml(TAROT[i], "small", true)}<div class="slot">${["Прошлое", "Настоящее", "Будущее"][k]}</div></div>`).join("") + `</div>` +
+      t.spread.map((i, k) => `<p><b>${["Прошлое", "Настоящее", "Будущее"][k]} — ${TAROT[i].name}.</b> ${TAROT[i].text}</p>`).join("") + `</div>`;
+  }
+  let yn = "";
+  if (t.yn != null) { const y = TAROT[t.yn]; yn = `<div class="card fade"><h2>Ответ карт: <span class="yn">${y.yn}</span></h2><p>Выпала карта <b>${y.name}</b> ${y.em} — ${y.key}. ${y.advice}</p></div>`; }
+  v.innerHTML = `<div>
+    <div class="card" style="text-align:center">
+      <h2>Карта дня</h2>
+      <p class="muted" id="hint">${t.open ? "" : "Нажми на карту, чтобы открыть"}</p>
+      <div class="tarot-wrap">${cardHtml(c, "", !!t.open, "day")}</div>
+      <div id="dayTxt">${t.open ? `<p><b>${c.name}</b> — ${c.text}</p><p>✨ Совет: ${c.advice}</p>` : ""}</div>
+    </div>
+    ${spread}${yn}
+    ${t.open ? `
+      ${t.spread ? "" : `<button class="btn" id="spread">🔮 Расклад на 3 карты ${adLabel}</button>`}
+      <button class="btn violet" id="ask">❓ Вопрос «да или нет»${t.yn != null ? ` ${adLabel}` : ""}</button>` : ""}
+  </div>`;
+  $("day").onclick = () => {
+    if (t.open) return;
+    t.open = true; store();
+    $("day").classList.add("flip"); $("hint").textContent = "";
+    setTimeout(render, 900);
+  };
+  if ($("spread")) $("spread").onclick = () => Platform.rewarded(() => {
+    const r = rng("spread" + Date.now()), set = new Set(); while (set.size < 3) set.add(Math.floor(r() * 22));
+    t.spread = [...set]; store(); render();
+  });
+  if ($("ask")) $("ask").onclick = () => {
+    const doAsk = () => sheet(`<h2>Задай вопрос про себя</h2><p class="muted" style="text-align:center">Мысленно сформулируй вопрос, на который можно ответить «да» или «нет», и вытяни карту.</p>
+      <button class="btn" id="draw">🃏 Вытянуть карту</button>`, () => $("draw").onclick = () => { t.yn = Math.floor(Math.random() * 22); store(); closeSheet(); render(); });
+    if (t.yn != null) Platform.rewarded(doAsk); else doAsk();
+  };
+}
+
+function renderCookie(v) {
+  const c = today("cookie");
+  c.list = c.list || [];
+  const has = c.list.length > 0, last = has ? COOKIES[c.list[c.list.length - 1]] : null;
+  v.innerHTML = `<div>
+    <div class="card" style="text-align:center">
+      <h2>Печенька с предсказанием</h2>
+      ${has ? `<div class="paper">${last}</div>` : `<p class="muted">Нажми на печеньку, чтобы разломить её</p><div class="cookie" id="ck">🥠</div>`}
+    </div>
+    ${has ? `<button class="btn" id="more">🥠 Ещё одна печенька ${adLabel}</button>
+      <button class="btn violet" id="send">💌 Отправить другу</button>` : ""}
+    ${c.list.length > 1 ? `<div class="card"><h2>Сегодня ты уже узнал</h2>${c.list.slice(0, -1).map(i => `<p>🥠 ${COOKIES[i]}</p>`).join("")}</div>` : ""}
+  </div>`;
+  const crack = () => {
+    let i, tries = 0; do { i = Math.floor(Math.random() * COOKIES.length); } while (c.list.includes(i) && ++tries < 50);
+    c.list.push(i); store();
+  };
+  if ($("ck")) $("ck").onclick = () => { $("ck").classList.add("crack"); crack(); setTimeout(render, 600); };
+  if ($("more")) $("more").onclick = () => Platform.rewarded(() => { crack(); render(); });
+  if ($("send")) $("send").onclick = () => Platform.shareLink();
+}
+
+function renderLove(v) {
+  const a = sign(), b = SIGNS.find(s => s.id === save.partner);
+  const open = today("unlocked").love === (b && b.id);
+  let res = "";
+  if (b) {
+    const c = compat(a, b);
+    const m = (label, val) => `<div class="meter">${label}<b>${val}%</b><div class="bar"><i style="width:${val}%"></i></div></div>`;
+    const det = `<div class="meters">${m("Любовь", c.love)}${m("Дружба", c.friend)}${m("Дела", c.work)}</div><p>💡 Совет паре: ${c.tip}</p>`;
+    res = `<div class="card fade" style="text-align:center"><div class="big">${c.pct}%</div><p>${c.text}</p></div>
+      <div class="card ${open ? "" : "locked"}"><h2>Подробно о вашей паре</h2>${open ? det : `<div class="blur">${det}</div><button class="btn" id="unl">🔓 Открыть подробности ${adLabel}</button>`}</div>
+      <button class="btn violet" id="inv">💌 Позвать вторую половинку</button>`;
+  }
+  v.innerHTML = `<div>
+    <div class="card"><h2 style="text-align:center">Совместимость знаков</h2>
+      <div class="pair"><div class="pick" id="pa"><i>${a.s}</i>${a.n}</div><div class="heart">💞</div>
+      <div class="pick" id="pb"><i>${b ? b.s : "❔"}</i>${b ? b.n : "Выбрать"}</div></div>
+    </div>${res}
+  </div>`;
+  $("pa").onclick = () => setTab("horo");
+  $("pb").onclick = () => sheet(signPicker("Знак партнёра"), r => bindPicker(n => { save.partner = n.id; store(); closeSheet(); render(); }, r));
+  if ($("unl")) $("unl").onclick = () => Platform.rewarded(() => { today("unlocked").love = b.id; store(); render(); });
+  if ($("inv")) $("inv").onclick = () => Platform.shareLink();
+}
+
+/* ================= ШТОРКА ================= */
+function sheet(html, onReady) {
+  const o = $("overlay");
+  o.innerHTML = `<div class="sheet" id="sh">${html}</div>`;
+  o.classList.add("show");
+  o.onclick = e => { if (e.target === o) closeSheet(); };
+  onReady && onReady($("sh"));
+}
+function closeSheet() { $("overlay").classList.remove("show"); $("overlay").innerHTML = ""; }
+
+/* ================= КАРТИНКА ДЛЯ ИСТОРИИ ================= */
+function storyImage(s, h) {
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const g = c.getContext("2d");
+  const grd = g.createLinearGradient(0, 0, 0, 1920); grd.addColorStop(0, "#0b0a24"); grd.addColorStop(1, "#3a1f7a");
+  g.fillStyle = grd; g.fillRect(0, 0, 1080, 1920);
+  const r = rng("story" + TODAY);
+  for (let i = 0; i < 220; i++) { g.fillStyle = `rgba(255,255,255,${0.2 + r() * 0.8})`; g.beginPath(); g.arc(r() * 1080, r() * 1920, r() * 3 + 0.5, 0, 7); g.fill(); }
+  g.textAlign = "center";
+  g.fillStyle = "#ffd27a"; g.font = "bold 300px serif"; g.fillText(s.s, 540, 620);
+  g.fillStyle = "#fff"; g.font = "bold 110px Segoe UI, sans-serif"; g.fillText(s.n, 540, 800);
+  g.fillStyle = "#b8b2e0"; g.font = "48px Segoe UI, sans-serif"; g.fillText(dateLabel(), 540, 880);
+  g.fillStyle = "#fff"; g.font = "58px Segoe UI, sans-serif";
+  wrap(g, h.main, 540, 1040, 900, 80);
+  g.fillStyle = "#ffd27a"; g.font = "bold 52px Segoe UI, sans-serif";
+  g.fillText(`Любовь ${h.meters.love}% · Дела ${h.meters.work}%`, 540, 1600);
+  g.fillStyle = "#b8b2e0"; g.font = "44px Segoe UI, sans-serif"; g.fillText("Звёзды дня ✦ узнай свой прогноз", 540, 1760);
+  return c.toDataURL("image/jpeg", 0.88);
+}
+function wrap(g, text, x, y, maxW, lh) {
+  const words = text.split(" "); let line = "";
+  for (const w of words) { const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW) { g.fillText(line, x, y); y += lh; line = w; } else line = t; }
+  g.fillText(line, x, y);
+}
+function dateLabel() { const d = new Date(); return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${WDAYS[d.getDay()]}`; }
+
+/* ================= ЗВЁЗДНОЕ НЕБО ================= */
+function sky() {
+  const c = $("sky"), g = c.getContext("2d"); let stars = [];
+  const size = () => { c.width = innerWidth; c.height = innerHeight; stars = Array.from({ length: Math.round(innerWidth * innerHeight / 9000) }, () => ({ x: Math.random() * c.width, y: Math.random() * c.height, r: Math.random() * 1.4 + .3, p: Math.random() * 6 })); };
+  size(); addEventListener("resize", size);
+  const loop = t => { g.clearRect(0, 0, c.width, c.height);
+    for (const s of stars) { g.globalAlpha = .35 + .65 * Math.abs(Math.sin(t / 1400 + s.p)); g.fillStyle = "#fff"; g.beginPath(); g.arc(s.x, s.y, s.r, 0, 7); g.fill(); }
+    requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+
+/* ================= СТАРТ ================= */
+(async function start() {
+  sky();
+  $("hDate").textContent = dateLabel();
+  await Platform.init();
+  touchStreak();
+  $("streak").textContent = `🔥 ${save.streak} ${plural(save.streak, "день", "дня", "дней")}`;
+  document.querySelectorAll("nav button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  if (!save.sign) {
+    const u = await Platform.userInfo();
+    if (u && u.bdate) { const [d, m] = u.bdate.split(".").map(Number); if (d && m) { save.sign = signByDate(d, m).id; store(); toast(`Определили твой знак: ${sign().n}. Можно сменить`); } }
+    if (u && u.first_name) $("hTitle").firstChild.textContent = `Привет, ${u.first_name}!`;
+  }
+  setTab("horo");
+  if (Platform.kind === "vk" && save.opens === 2 && !save.favAsked) { save.favAsked = true; store(); setTimeout(() => Platform.favorites(), 4000); }
+})();
+function plural(n, a, b, c) { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? b : c; }
+</script>
+</body>
+</html>
